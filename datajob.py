@@ -26,8 +26,6 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.metrics import classification_report
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.cluster import KMeans
-from bayes_opt import BayesianOptimization
-from sklearn.metrics import accuracy_score
 import warnings
 
 # Ignorer les avertissements
