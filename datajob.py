@@ -10,7 +10,6 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import streamlit as st
-import prince
 from functions import axes_figure, title_filtering, reduction, train_model, display_crosstab, variance_graph, grid_search_model, get_param_grid, train_best_model
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
