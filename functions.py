@@ -181,6 +181,7 @@ def grid_search_params(best_model, param_grid, X_train_reduced, X_test_reduced, 
     return grid_search.best_params_, y_test, y_pred
 
 def train_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
+    model = 0
     if model_choisi == 'Régression logistique' :
         model = LogisticRegression()
     elif model_choisi == "Arbre de décision":
@@ -189,25 +190,38 @@ def train_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
         model = KNeighborsClassifier()
     elif model_choisi == "Forêt aléatoire":
         model = RandomForestClassifier()
-    elif model_choisi == "K-means Clustering":
+    elif model_choisi == "K-means":
         model = KMeans(n_clusters=3)
+    elif model_choisi == "t_SNE":
+        model = TSNE(n_components=2, n_clusters=3)
   
-    if model_choisi != "K-means":
+    if model_choisi != "K-means" and model_choisi != "t-SNE":
         model.fit(X_train_reduced, y_train)
         score = model.score(X_test_reduced, y_test)
         return score, model
+    
     else:
-        model.fit(X_train_reduced)
-        labels = model.predict(X_train_reduced)
+        if model_choisi == "K-means":
+            axes = model.fit_transform(X_train_reduced)
+            labels = model.predict(X_train_reduced)
+        else:
+            tsne = TSNE(n_components=2)
+            axes = tsne.fit_transform(X_train_reduced)
+            kmeans = KMeans(n_clusters=3)
+            labels = kmeans.fit_predict(X_train_reduced)
+            
         score = 0
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.scatter(X_train_reduced[:, 0], X_train_reduced[:, 1], c=labels, cmap=plt.cm.Spectral)
+        ax.scatter(axes[:, 0], axes[:, 1], c=labels, cmap=plt.cm.Spectral)
         ax.set_xlabel('Axe 1')
         ax.set_ylabel('Axe 2')
-        ax.set_title("K-means Clustering")
+        ax.set_title(model_choisi)
         st.pyplot(fig)
         return score, model
+        
+        
+        
     
 def get_param_grid(model_choisi):
     """

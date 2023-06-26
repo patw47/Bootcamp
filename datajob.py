@@ -227,11 +227,15 @@ elif page == pages[2]:
     #Affichage graphique variance expliquée
     #if reduction_choice == 'PCA':
         #variance_graph(reduction) 
-        
-    st.subheader("Recherche des meilleurs hyperparamètres :")
-    
-    search_param = st.button("Lancer l'optimisation")
-    reset_button = st.button("Réinitialiser")
+
+    st.markdown("**Recherche des meilleurs hyperparamètres :**")
+    col1, col2 = st.columns(2)
+
+    # Bouton "Lancer l'optimisation" dans la première colonne
+    search_param = col1.button("Lancer l'optimisation")
+
+    # Bouton "Réinitialiser" dans la deuxième colonne
+    reset_button = col2.button("Réinitialiser")
     
     if reset_button:
         search_param = False
@@ -272,10 +276,9 @@ elif page == pages[2]:
     
     #Appel fonction d'entrainement du modèle
     score, model = train_model(methode_choisie, X_train_reduced, y_train, X_test_reduced, y_test)
-    #model = train_model(model_choisi)
     
     #Affichage graphique axes
-    axes_figure(X_train_reduced, y_train, reduction_choice)
+    #axes_figure(X_train_reduced, y_train, reduction_choice)
     
 elif page == pages[3]:  
     st.subheader('Conclusion')
