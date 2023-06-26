@@ -42,8 +42,7 @@ df = pd.read_csv('kaggle_survey_2020_responses.csv')
 
 pages = ['Exploration des données', 
          'Data Visualisation',
-         'Modélisation : Méthode supervisée', 
-         'Modélisation : Méthode non supervisée',
+         'Modélisation',
          'Conclusion']
 
 st.markdown("[Lien vers le rapport écrit ](https://docs.google.com/document/d/1DLS5DsbR-z5cnq5FYZIlrufrJUUiUxgFgHqk9vBGz2c/edit?usp=sharing')")
@@ -218,16 +217,12 @@ elif page == pages[2]:
        
 
     #Affichage tableau prédiction vs réalité
-    #st.write("Comparaison prédictions vs réalité :")
-    #st.write(display_crosstab(model, X_test_reduced, y_test)[0])
+    st.write("Comparaison prédictions vs réalité :")
+    st.write(display_crosstab(model, X_test_reduced, y_test)[0])
     #st.dataframe(display_crosstab(model, X_test_reduced, y_test)[0])
     #Affichage rapport de classification
-    #st.write("Rapport de classification :")
-    #st.text(display_crosstab(model, X_test_reduced, y_test)[1])
-        
-    #Affichage graphique axes
-    #if model_choisi != "K-means Clustering": 
-        #axes_figure(X_train_reduced, y_train, reduction_choice) 
+    st.write("Rapport de classification :")
+    st.text(display_crosstab(model, X_test_reduced, y_test)[1])
 
     #Affichage graphique variance expliquée
     #if reduction_choice == 'PCA':
@@ -253,9 +248,10 @@ elif page == pages[2]:
        #score_best_model = train_best_model(model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test)
        
        param_grid = {
-           'C': [0.1, 1.0, 10.0],
-           'penalty': ['l1', 'l2']
-           }
+           'C': [0.1, 1.0, 10.0, 100.0],
+           'penalty': ['l1', 'l2', 'elasticnet'],
+           'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']   
+       }
 
 
        # Créer le modèle de régression logistique
@@ -267,9 +263,6 @@ elif page == pages[2]:
        st.write(classification_report(y_test, y_pred))
        score = best_model.score(X_test_reduced, y_test)
        st.write("Score : ", score)
-
-
-elif page == pages[3]:
     
     st.subheader('Modélisation : Méthode non supervisée')
     
@@ -281,7 +274,8 @@ elif page == pages[3]:
     score, model = train_model(methode_choisie, X_train_reduced, y_train, X_test_reduced, y_test)
     #model = train_model(model_choisi)
     
-    #Affichage du score
+    #Affichage graphique axes
+    axes_figure(X_train_reduced, y_train, reduction_choice)
     
-elif page == pages[4]:  
+elif page == pages[3]:  
     st.subheader('Conclusion')
