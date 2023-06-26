@@ -26,6 +26,8 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.metrics import classification_report
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.cluster import KMeans
+from bayes_opt import BayesianOptimization
+from sklearn.metrics import accuracy_score
 import warnings
 
 # Ignorer les avertissements
@@ -247,86 +249,26 @@ elif page == pages[2]:
        #Récupération des paramètres possible pour chsque modèle
        #param_grid, model = get_param_grid(model_choisi)
        
-       param_grid = {
-           'C': [0.1, 1.0, 10.0, 100.0],
-           'penalty': ['l1', 'l2', 'elasticnet'],
-           'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']
-           
-       }
-
        # Utilisation de la fonction grid_search_model 
        #best_model, y_test, y_pred, best_params = grid_search_model(model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test)
        
        #score_best_model = train_best_model(model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test)
-     
-       '''model = LogisticRegression()
-
-       # Effectuer la recherche sur la grille des hyperparamètres
-       grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5)
-       grid_search.fit(X_train_reduced, y_train)
-
-       # Obtenir le meilleur modèle trouvé
-       best_model = grid_search.best_estimator_
-
-        # Prédire les étiquettes avec le meilleur modèle
-       y_pred = best_model.predict(X_test_reduced)
-
-        # Affichage du rapport de performance
-       st.write(classification_report(y_test, y_pred))
-
-        # Affichage du score du meilleur modèle sur les données de test
-       score = best_model.score(X_test_reduced, y_test)
-       st.write("Score : ", score)'''
        
-       
-       from bayes_opt import BayesianOptimization
-       from sklearn.metrics import accuracy_score
-
-       # Définir les limites des hyperparamètres à optimiser
-       param_bounds = {
-           'C': (0.1, 10.0),
+       param_grid = {
+           'C': [0.1, 1.0, 10.0],
            'penalty': ['l1', 'l2']
            }
 
-# Fonction objectif à maximiser (ici, la précision)
-       def objective_function(C, penalty):
-    # Créer le modèle de régression logistique avec les hyperparamètres donnés
-        model = LogisticRegression(C=C, penalty=penalty)
 
-    # Ajuster le modèle sur les données d'entraînement
-        model.fit(X_train_reduced, y_train)
-
-    # Prédire les étiquettes avec le modèle ajusté
-        y_pred = model.predict(X_test_reduced)
-
-    # Calculer et renvoyer la précision
-        accuracy = accuracy_score(y_test, y_pred)
-        return accuracy
-
-# Créer l'optimiseur bayésien
-        optimizer = BayesianOptimization(f=objective_function, pbounds=param_bounds)
-
-# Exécuter l'optimisation
-        optimizer.maximize()
-
-# Obtenir les meilleurs hyperparamètres trouvés
-        best_params = optimizer.max['params']
-
-# Créer le modèle final avec les meilleurs hyperparamètres
-        final_model = LogisticRegression(**best_params)
-
-# Ajuster le modèle final sur les données d'entraînement
-        final_model.fit(X_train_reduced, y_train)
-
-# Prédire les étiquettes avec le modèle final
-        y_pred = final_model.predict(X_test_reduced)
-
-# Affichage du rapport de performance
-        st.write(classification_report(y_test, y_pred))
-
-# Affichage du score du modèle sur les données de test
-        score = final_model.score(X_test_reduced, y_test)
-        st.write("Score : ", score)
+       # Créer le modèle de régression logistique
+       model = LogisticRegression()
+       grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5)
+       grid_search.fit(X_train_reduced, y_train)
+       best_model = grid_search.best_estimator_
+       y_pred = best_model.predict(X_test_reduced)
+       st.write(classification_report(y_test, y_pred))
+       score = best_model.score(X_test_reduced, y_test)
+       st.write("Score : ", score)
 
 
 elif page == pages[3]:
