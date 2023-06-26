@@ -10,7 +10,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import streamlit as st
-from functions import axes_figure, title_filtering, reduction, train_model, display_crosstab, variance_graph, grid_search_model, get_param_grid, train_best_model
+from functions import axes_figure, title_filtering, reduction, train_model, display_crosstab, variance_graph, grid_search_model, get_param_grid, train_best_model,grid_search_params
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
@@ -19,6 +19,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import GridSearchCV
 from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
@@ -41,16 +42,14 @@ df = pd.read_csv('kaggle_survey_2020_responses.csv')
 
 pages = ['Exploration des données', 
          'Data Visualisation',
-         'Modélisation', 
+         'Modélisation : Méthode supervisée', 
+         'Modélisation : Méthode non supervisée',
          'Conclusion']
 
-st.write("Introduction et Cadre de la recherche")
 st.markdown("[Lien vers le rapport écrit ](https://docs.google.com/document/d/1DLS5DsbR-z5cnq5FYZIlrufrJUUiUxgFgHqk9vBGz2c/edit?usp=sharing')")
-
 st.markdown("[Lien vers les données sur le site de Kaggle](https://www.kaggle.com/c/kaggle-survey-2020/overview')")
 
 st.sidebar.title("Sommaire")
-
 page = st.sidebar.radio('Aller vers', pages)
 
  #On vire la première ligne 
@@ -79,7 +78,6 @@ df_new = df_new[df_new['Q6'] != "I have never written code"]
 df_new = df_new.dropna(subset=['Q5'])
 
 #On vire les colonnes correspondant aux question "dans deux ans" 
-
 #On les met dans un dataframe pour plus tard 
 df_future = df_new.iloc[:, 256:356]
 
@@ -89,7 +87,7 @@ df_new = df_new.drop(columns=df_future.columns)
 #On vire la colonne duration devenue inutile
 df_new.drop('Duration', axis = 1, inplace = True)
 
-df_new.shape
+#df_new.shape
 
 #FIN NETTOYAGE
 
@@ -100,7 +98,6 @@ if page == pages[0]:
     
     if st.checkbox("Afficher les valeurs manquantes"):
         st.dataframe(df.isna().sum())
-
 
 elif page == pages[1]:
     
@@ -116,7 +113,7 @@ elif page == pages[1]:
     
 elif page == pages[2]:
     
-    st.subheader('Modélisation')
+    st.subheader('Modélisation : Méthode supervisée')
 
     #Conversion des valeurs vides des colonnes contenant les sous questions (identifiées par "_" en 0 et des valeurs existantes en 1)
     for column in df_new.columns:
@@ -203,23 +200,21 @@ elif page == pages[2]:
     
     #Selectbox Choix de la méthode de réduction
     reduction_choice = st.selectbox(label = "Choix de la méthode de réduction", 
-                                options = ['PCA', 'LDA', 't-SNE'])    
+                                options = ['PCA', 'LDA'])    
     
     #Appel fonction réduction de données
     X_train_reduced, X_test_reduced, reduction = reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled)
     
     #Selectbox avec Choix du modèle
     model_choisi = st.selectbox(label = "Choix du modèle", 
-                                options = ['Régression logistique', 'Arbre de décision', 'KNN', 'Forêt aléatoire', 'K-means Clustering'])    
+                                options = ['Régression logistique', 'Arbre de décision', 'KNN', 'Forêt aléatoire'])    
     
     #Appel fonction d'entrainement du modèle
     score, model = train_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test)
     #model = train_model(model_choisi)
     
     #Affichage du score
-    
-    if model_choisi != "K-means Clustering": 
-       st.write("Score :", score)
+    st.write("Score :", score)
        
 
     #Affichage tableau prédiction vs réalité
@@ -238,28 +233,115 @@ elif page == pages[2]:
     #if reduction_choice == 'PCA':
         #variance_graph(reduction) 
         
-    st.subheader("Recherche du meilleur modèle et des meilleurs hyperparamètres :")
+    st.subheader("Recherche des meilleurs hyperparamètres :")
+    
     search_param = st.button("Lancer l'optimisation")
-    if search_param == True:
+    reset_button = st.button("Réinitialiser")
     
-       #Récupération des paramètres possible pour chsque modèle
-       param_grid, model = get_param_grid(model_choisi)
-       
-       st.write("Hyperparamètres :" , param_grid)
-      
-       # Utilisation de la fonction grid_search_model 
-       best_model, y_test, y_pred, best_params = grid_search_model(model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test)
-    
-       st.write("Modèle à privilégier :", best_model)
-        # Affichage du rapport de performance
-        #st.write(classification_report(y_test, y_pred))
-    
-        #st.write("le modèle le plus adapté pour la problématique est :", best_model)
+    if reset_button:
+        search_param = False
+        reset_button = False
         
-        #score_best_model = train_best_model(best_model, best_params, X_train_reduced, X_test_reduced, y_train, y_test)
+    if search_param:
+       
+       #Récupération des paramètres possible pour chsque modèle
+       #param_grid, model = get_param_grid(model_choisi)
+       
+       param_grid = {
+           'C': [0.1, 1.0, 10.0, 100.0],
+           'penalty': ['l1', 'l2', 'elasticnet'],
+           'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']
+           
+       }
+
+       # Utilisation de la fonction grid_search_model 
+       #best_model, y_test, y_pred, best_params = grid_search_model(model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test)
+       
+       #score_best_model = train_best_model(model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test)
+     
+       '''model = LogisticRegression()
+
+       # Effectuer la recherche sur la grille des hyperparamètres
+       grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5)
+       grid_search.fit(X_train_reduced, y_train)
+
+       # Obtenir le meilleur modèle trouvé
+       best_model = grid_search.best_estimator_
+
+        # Prédire les étiquettes avec le meilleur modèle
+       y_pred = best_model.predict(X_test_reduced)
+
+        # Affichage du rapport de performance
+       st.write(classification_report(y_test, y_pred))
+
+        # Affichage du score du meilleur modèle sur les données de test
+       score = best_model.score(X_test_reduced, y_test)
+       st.write("Score : ", score)'''
+       
+       
+       from bayes_opt import BayesianOptimization
+       from sklearn.metrics import accuracy_score
+
+       # Définir les limites des hyperparamètres à optimiser
+       param_bounds = {
+           'C': (0.1, 10.0),
+           'penalty': ['l1', 'l2']
+           }
+
+# Fonction objectif à maximiser (ici, la précision)
+       def objective_function(C, penalty):
+    # Créer le modèle de régression logistique avec les hyperparamètres donnés
+        model = LogisticRegression(C=C, penalty=penalty)
+
+    # Ajuster le modèle sur les données d'entraînement
+        model.fit(X_train_reduced, y_train)
+
+    # Prédire les étiquettes avec le modèle ajusté
+        y_pred = model.predict(X_test_reduced)
+
+    # Calculer et renvoyer la précision
+        accuracy = accuracy_score(y_test, y_pred)
+        return accuracy
+
+# Créer l'optimiseur bayésien
+        optimizer = BayesianOptimization(f=objective_function, pbounds=param_bounds)
+
+# Exécuter l'optimisation
+        optimizer.maximize()
+
+# Obtenir les meilleurs hyperparamètres trouvés
+        best_params = optimizer.max['params']
+
+# Créer le modèle final avec les meilleurs hyperparamètres
+        final_model = LogisticRegression(**best_params)
+
+# Ajuster le modèle final sur les données d'entraînement
+        final_model.fit(X_train_reduced, y_train)
+
+# Prédire les étiquettes avec le modèle final
+        y_pred = final_model.predict(X_test_reduced)
+
+# Affichage du rapport de performance
+        st.write(classification_report(y_test, y_pred))
+
+# Affichage du score du modèle sur les données de test
+        score = final_model.score(X_test_reduced, y_test)
+        st.write("Score : ", score)
+
+
+elif page == pages[3]:
     
-elif page == pages[5]:
+    st.subheader('Modélisation : Méthode non supervisée')
+    
+    #Selectbox avec Choix du modèle
+    methode_choisie = st.selectbox(label = "Choix du modèle", 
+                                options = ['t-SNE', 'K-means'])    
+    
+    #Appel fonction d'entrainement du modèle
+    score, model = train_model(methode_choisie, X_train_reduced, y_train, X_test_reduced, y_test)
+    #model = train_model(model_choisi)
+    
+    #Affichage du score
+    
+elif page == pages[4]:  
     st.subheader('Conclusion')
-    
-    
-    

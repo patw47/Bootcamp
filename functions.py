@@ -172,6 +172,14 @@ def grid_search_model(model, param_grid, X_train_reduced, X_test_reduced, y_trai
     # Renvoie le meilleur modèle, les prédictions et les meilleurs hyperparamètres
     return best_model, y_test, y_pred, grid_search.best_params_
 
+def grid_search_params(best_model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test):
+    grid_search = GridSearchCV(estimator=best_model, param_grid=param_grid, cv=5)
+    grid_search.fit(X_train_reduced, y_train)
+    # Évaluation du  modèle sur les données de test
+    y_pred = best_model.predict(X_test_reduced)
+    # Renvoie les prédictions et les meilleurs hyperparamètres
+    return grid_search.best_params_, y_test, y_pred
+
 def train_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
     if model_choisi == 'Régression logistique' :
         model = LogisticRegression()
@@ -184,7 +192,7 @@ def train_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
     elif model_choisi == "K-means Clustering":
         model = KMeans(n_clusters=3)
   
-    if model_choisi != "K-means Clustering":
+    if model_choisi != "K-means":
         model.fit(X_train_reduced, y_train)
         score = model.score(X_test_reduced, y_test)
         return score, model
