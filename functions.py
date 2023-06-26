@@ -24,6 +24,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.metrics import classification_report
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.cluster import KMeans
+from sklearn.model_selection import GridSearchCV
 import warnings
 
 # Ignorer les avertissements
@@ -118,35 +119,6 @@ def reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled):
     if reduction_choice == 't-SNE':    
        X_test_reduced =  X_test_scaled
     return X_train_reduced, X_test_reduced, reduction
-
-def train_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
-    if model_choisi == 'Régression logistique' :
-        model = LogisticRegression()
-    elif model_choisi == "Arbre de décision":
-        model = DecisionTreeClassifier()
-    elif model_choisi == "KNN":
-        model = KNeighborsClassifier()
-    elif model_choisi == "Forêt aléatoire":
-        model = RandomForestClassifier()
-    elif model_choisi == "K-means Clustering":
-        model = KMeans(n_clusters=3)
-    
-    if model_choisi != "K-means Clustering":
-        model.fit(X_train_reduced, y_train)
-        score = model.score(X_test_reduced, y_test)
-        return score, model
-    else:
-        model.fit(X_train_reduced)
-        labels = model.predict(X_train_reduced)
-        score = 0
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.scatter(X_train_reduced[:, 0], X_train_reduced[:, 1], c=labels, cmap=plt.cm.Spectral)
-        ax.set_xlabel('Axe 1')
-        ax.set_ylabel('Axe 2')
-        ax.set_title("K-means Clustering")
-        st.pyplot(fig)
-        return model
     
  # Affichage de la table de contingence
 def display_crosstab(model, X_test_reduced, y_test):
@@ -169,3 +141,119 @@ def variance_graph(reduction):
     plt.ylabel('Valeurs propres')
     # Afficher le graphe dans Streamlit
     st.pyplot(fig)
+    
+def grid_search_model(model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test):
+    """
+    Effectue une recherche sur la grille des hyperparamètres pour un modèle donné.
+
+    Arguments :
+    - model : Objet modèle à entraîner et à évaluer.
+    - param_grid : Dictionnaire des hyperparamètres à tester.
+    - X_train : Matrice des caractéristiques d'entraînement.
+    - X_test : Matrice des caractéristiques de test.
+    - y_train : Vecteur des étiquettes d'entraînement.
+    - y_test : Vecteur des étiquettes de test.
+
+    Retourne :
+    - best_model : Meilleur modèle trouvé lors de la recherche sur la grille.
+    - y_pred : Prédictions du meilleur modèle sur l'ensemble de test.
+    - best_params : Meilleurs hyperparamètres trouvés lors de la recherche sur la grille.
+    """
+
+    # Recherche des meilleures combinaisons d'hyperparamètres
+    grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5)
+    grid_search.fit(X_train_reduced, y_train)
+
+    # Meilleur modèle trouvé
+    best_model = grid_search.best_estimator_
+
+    # Évaluation du meilleur modèle sur les données de test
+    y_pred = best_model.predict(X_test_reduced)
+
+    # Renvoie le meilleur modèle, les prédictions et les meilleurs hyperparamètres
+    return best_model, y_test, y_pred, grid_search.best_params_
+
+def train_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
+    if model_choisi == 'Régression logistique' :
+        model = LogisticRegression()
+    elif model_choisi == "Arbre de décision":
+        model = DecisionTreeClassifier()
+    elif model_choisi == "KNN":
+        model = KNeighborsClassifier()
+    elif model_choisi == "Forêt aléatoire":
+        model = RandomForestClassifier()
+    elif model_choisi == "K-means Clustering":
+        model = KMeans(n_clusters=3)
+  
+    if model_choisi != "K-means Clustering":
+        model.fit(X_train_reduced, y_train)
+        score = model.score(X_test_reduced, y_test)
+        return score, model
+    else:
+        model.fit(X_train_reduced)
+        labels = model.predict(X_train_reduced)
+        score = 0
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.scatter(X_train_reduced[:, 0], X_train_reduced[:, 1], c=labels, cmap=plt.cm.Spectral)
+        ax.set_xlabel('Axe 1')
+        ax.set_ylabel('Axe 2')
+        ax.set_title("K-means Clustering")
+        st.pyplot(fig)
+        return score, model
+    
+def get_param_grid(model_choisi):
+    """
+    Retourne le dictionnaire param_grid approprié pour le modèle donné.
+
+    Arguments :
+    - model_name : Nom du modèle (LinearRegression, KNN, DecisionTree, RandomForest).
+
+    Retourne :
+    - param_grid : Dictionnaire des hyperparamètres à tester pour le modèle donné.
+    """
+    if model_choisi == 'Régression logistique':
+        model = LogisticRegression()
+        param_grid = {
+            'C': [0.1, 1.0, 10.0, 100.0],
+            'penalty': ['l1', 'l2', 'elasticnet'],
+            'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']
+            
+        }
+    elif model_choisi == 'KNN':
+        model = KNeighborsClassifier()
+        param_grid = {
+            'n_neighbors': range(3, 8, 2),
+            'weights': ['uniform', 'distance']
+        }
+    elif model_choisi == 'Arbre de décision':
+        model = DecisionTreeClassifier()
+        param_grid = {
+            'max_depth': [None, 5, 10],
+            'min_samples_split': range(2, 12, 3)
+        }
+    elif model_choisi == 'Forêt aléatoire':
+        model = RandomForestClassifier()
+        param_grid = {
+            'n_estimators': [100, 200, 300],
+            'max_depth': [None, 5, 10],
+            'min_samples_split': range(2, 12, 3)
+        }
+    elif model_choisi == 'K-means Clustering':
+        model = KMeans()
+        param_grid = {
+            'n_clusters': range(2, 8),
+            'init': ['k-means++', 'random'],
+            'max_iter': range(100, 501, 100)
+        }
+    else:
+        raise ValueError('Modèle non pris en charge.')
+
+    return param_grid, model
+
+def train_best_model(best_model, best_params, X_train_reduced, X_test_reduced, y_train, y_test):
+    best_model.set_params(**best_model.best_params_)
+    best_model.fit(X_train_reduced, y_train)
+    score_best_model = best_model.score(X_test_reduced, y_test)
+    return score_best_model
+    

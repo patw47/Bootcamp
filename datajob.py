@@ -11,7 +11,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import streamlit as st
 import prince
-from functions import axes_figure, title_filtering, reduction, train_model, display_crosstab, variance_graph
+from functions import axes_figure, title_filtering, reduction, train_model, display_crosstab, variance_graph, grid_search_model, get_param_grid, train_best_model
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
@@ -46,7 +46,7 @@ pages = ['Exploration des données',
          'Conclusion']
 
 st.write("Introduction et Cadre de la recherche")
-st.markdown("[Lien vers l'introduction](https://docs.google.com/document/d/1Jq3kX3E5a1M_fzxiSG2rvLELMUrImyOqEbJ0CEYMHEo/edit?usp=sharing')")
+st.markdown("[Lien vers le rapport écrit ](https://docs.google.com/document/d/1DLS5DsbR-z5cnq5FYZIlrufrJUUiUxgFgHqk9vBGz2c/edit?usp=sharing')")
 
 st.markdown("[Lien vers les données sur le site de Kaggle](https://www.kaggle.com/c/kaggle-survey-2020/overview')")
 
@@ -178,20 +178,20 @@ elif page == pages[2]:
     X_test = pd.concat([df_encoded_test, df_new_test], axis=1)
     
     #Checkpoint
-    st.write("Format de X_test: ", X_test.shape)
-    st.write("Format de X_train: ", X_train.shape)
-    st.write("On constate que le train_test_split a laissé une colonne surnuméraire dans un des jeux")
+    #st.write("Format de X_test: ", X_test.shape)
+    #st.write("Format de X_train: ", X_train.shape)
+    #st.write("On constate que le train_test_split a laissé une colonne surnuméraire dans un des jeux")
     
     #Détection de la colonne en trop
-    extra_column = None
-    for column in X_train.columns:
-        if column not in X_test.columns:
-            extra_column = column
-            break
-    if extra_column is not None:
-        st.write("La colonne surnuméraire dans X_train est :", extra_column, "Nous choissons de la supprimer.")
-    else:
-        st.write("Il n'y a pas de colonne surnuméraire dans X_train.")
+    #extra_column = None
+    #for column in X_train.columns:
+        #if column not in X_test.columns:
+            #extra_column = column
+            #break
+    #if extra_column is not None:
+        #st.write("La colonne surnuméraire dans X_train est :", extra_column, "Nous choissons de la supprimer.")
+    #else:
+        #st.write("Il n'y a pas de colonne surnuméraire dans X_train.")
     
     #Elimination de la colonne en trop
     X_train = X_train.drop("Q32_Domo", axis=1)
@@ -212,29 +212,52 @@ elif page == pages[2]:
     #Selectbox avec Choix du modèle
     model_choisi = st.selectbox(label = "Choix du modèle", 
                                 options = ['Régression logistique', 'Arbre de décision', 'KNN', 'Forêt aléatoire', 'K-means Clustering'])    
-        
+    
     #Appel fonction d'entrainement du modèle
     score, model = train_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test)
+    #model = train_model(model_choisi)
     
     #Affichage du score
-    if model_choisi != "K-means Clustering": 
-        st.write("Score :", score)
     
+    if model_choisi != "K-means Clustering": 
+       st.write("Score :", score)
+       
+
     #Affichage tableau prédiction vs réalité
-    st.write("Comparaison prédictions vs réalité :")
+    #st.write("Comparaison prédictions vs réalité :")
     #st.write(display_crosstab(model, X_test_reduced, y_test)[0])
-    st.dataframe(display_crosstab(model, X_test_reduced, y_test)[0])
+    #st.dataframe(display_crosstab(model, X_test_reduced, y_test)[0])
     #Affichage rapport de classification
-    st.write("Rapport de classification :")
-    st.text(display_crosstab(model, X_test_reduced, y_test)[1])
+    #st.write("Rapport de classification :")
+    #st.text(display_crosstab(model, X_test_reduced, y_test)[1])
         
     #Affichage graphique axes
-    if model_choisi != "K-means Clustering": 
-        axes_figure(X_train_reduced, y_train, reduction_choice) 
+    #if model_choisi != "K-means Clustering": 
+        #axes_figure(X_train_reduced, y_train, reduction_choice) 
 
     #Affichage graphique variance expliquée
-    if reduction_choice == 'PCA':
-        variance_graph(reduction) 
+    #if reduction_choice == 'PCA':
+        #variance_graph(reduction) 
+        
+    st.subheader("Recherche du meilleur modèle et des meilleurs hyperparamètres :")
+    search_param = st.button("Lancer l'optimisation")
+    if search_param == True:
+    
+       #Récupération des paramètres possible pour chsque modèle
+       param_grid, model = get_param_grid(model_choisi)
+       
+       st.write("Hyperparamètres :" , param_grid)
+      
+       # Utilisation de la fonction grid_search_model 
+       best_model, y_test, y_pred, best_params = grid_search_model(model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test)
+    
+       st.write("Modèle à privilégier :", best_model)
+        # Affichage du rapport de performance
+        #st.write(classification_report(y_test, y_pred))
+    
+        #st.write("le modèle le plus adapté pour la problématique est :", best_model)
+        
+        #score_best_model = train_best_model(best_model, best_params, X_train_reduced, X_test_reduced, y_train, y_test)
     
 elif page == pages[5]:
     st.subheader('Conclusion')
