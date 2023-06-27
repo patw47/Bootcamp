@@ -4,29 +4,9 @@ Created on Tue Jun 27 10:17:41 2023
 
 @author: PatriciaWintrebert
 """
-
 import numpy as np
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
 import streamlit as st
-from functions import colonnes_incompletes, axes_figure, title_filtering, reduction, train_model, display_crosstab, variance_graph, grid_search_model, get_param_grid, train_best_model,grid_search_params
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.impute import SimpleImputer
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import GridSearchCV
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from sklearn.metrics import classification_report
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.cluster import KMeans
-import warnings
 
 
 def nettoyage(df):
@@ -108,3 +88,46 @@ def nettoyage(df):
 
     if st.checkbox("Afficher les valeurs manquantes après nettoyage"):
         st.dataframe(df_new.isna().sum())
+
+
+def title_filtering(filter_title, column):
+    '''
+    Cette fonction permet de réduire le nombre de variables cibles en remplaçant certaines valeurs par celles qui s'
+    en rapprochent le plus.
+    
+    Params
+    -------
+    filter_title : str
+        L'option de filtrage choisie ('Oui' or 'Non').
+    dataframe : pandas.DataFrame
+        L'input DataFrame.
+    
+    Returns
+    -------
+   pandas.Series
+        La colonne modifiée 
+
+    '''        
+    if filter_title == 'Oui':
+        replacement_dict = {
+            "DBA/Database Engineer": "Data Engineer",
+            "Statistician" : "Data Analyst",
+            "Research Scientist" : "Data Scientist",
+            "Business Analyst" : "Data Analyst",
+            "Software Engineer": "Machine Learning Engineer"
+            }
+        column = column.replace(replacement_dict)
+    return column
+    
+
+def colonnes_incompletes(dataframe, seuil):
+    colonnes_incompletes = []
+    total_lignes = len(dataframe)
+    for colonne in dataframe.columns:
+        nb_reponses = dataframe[colonne].count()
+        ratio_reponses = nb_reponses / total_lignes
+
+        if ratio_reponses < seuil:
+            colonnes_incompletes.append(colonne)
+
+    return colonnes_incompletes
