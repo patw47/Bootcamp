@@ -5,28 +5,19 @@ Created on Fri Jun  9 11:09:49 2023
 @author: PatriciaWintrebert
 """
 
-import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import streamlit as st
 from main_functions import nettoyage
-from functions import colonnes_incompletes, axes_figure, title_filtering, reduction, train_model, display_crosstab, variance_graph, grid_search_model, get_param_grid, train_best_model,grid_search_params
+from modeling_functions import reduction, train_model, display_crosstab
+#from modeling_functions import axes_figure, reduction, train_model, display_crosstab, variance_graph, grid_search_model, get_param_grid, train_best_model,grid_search_params
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.impute import SimpleImputer
-from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import GridSearchCV
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.metrics import classification_report
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.cluster import KMeans
 import warnings
 
 # Ignorer les avertissements
