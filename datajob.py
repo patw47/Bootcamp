@@ -10,7 +10,8 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import streamlit as st
-from functions import axes_figure, title_filtering, reduction, train_model, display_crosstab, variance_graph, grid_search_model, get_param_grid, train_best_model,grid_search_params
+from main_functions import nettoyage
+from functions import colonnes_incompletes, axes_figure, title_filtering, reduction, train_model, display_crosstab, variance_graph, grid_search_model, get_param_grid, train_best_model,grid_search_params
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.tree import DecisionTreeClassifier
@@ -31,14 +32,21 @@ import warnings
 # Ignorer les avertissements
 warnings.filterwarnings("ignore")
 
-#import plotly_express as px
-
-#st.markdown("# Exploration des données")
-#st.sidebar.markdown("# Exploration des données")
-
 st.title('Projet DataJob')
 
-df = pd.read_csv('kaggle_survey_2020_responses.csv')
+# Initialisation des données dans st.session_state
+if 'df' not in st.session_state:
+    st.session_state.df = None
+
+if 'df_new' not in st.session_state:
+    st.session_state.df_new = None
+
+# Chargement des données si elles n'ont pas déjà été chargées
+if st.session_state.df is None:
+    st.session_state.df = pd.read_csv('kaggle_survey_2020_responses.csv')
+
+df = st.session_state.df
+
 
 pages = ['Exploration des données', 
          'Data Visualisation',
@@ -51,95 +59,88 @@ st.markdown("[Lien vers les données sur le site de Kaggle](https://www.kaggle.c
 st.sidebar.title("Sommaire")
 page = st.sidebar.radio('Aller vers', pages)
 
- #On vire la première ligne 
-df = df.drop(df.index[0])
-
-#On renomme la colonne Duration
-df = df.rename(columns={"Time from Start to Finish (seconds)": "Duration"})
-#Conversion duration en int
-df['Duration'].astype(int)
-#Ajout colonne DurationMin convertie en minutes
-df['Duration'] = pd.to_numeric(df['Duration'], errors='coerce')
-df['DurationMin'] = df['Duration'] / 60
-
-#nombre de lignes en dessous de 2 
-duration_threshold = 2  # Threshold in minutes
-df_minvalues = df[df['DurationMin'] < duration_threshold]
-
-#Création du nouveau df dépourvu de ces valeurs aberrantes
-df_new = df.drop(df_minvalues.index)
-df_new.head()
-
-#Création du nouveau df dépourvu des gens qui ne programment pas
-df_new = df_new[df_new['Q6'] != "I have never written code"]
-
-#On vire toutes les lignes dont la Q5 (titre) est vide
-df_new = df_new.dropna(subset=['Q5'])
-
-#On vire les colonnes correspondant aux question "dans deux ans" 
-#On les met dans un dataframe pour plus tard 
-df_future = df_new.iloc[:, 256:356]
-
-#On les efface de df_new
-df_new = df_new.drop(columns=df_future.columns)
-
-#On vire la colonne duration devenue inutile
-df_new.drop('Duration', axis = 1, inplace = True)
-
-#df_new.shape
-
-#FIN NETTOYAGE
-
 if page == pages[0]:
     #st.image('titanic.jpg')
-    st.subheader('Exploration des données')    
-    st.dataframe(df.head())
+    st.subheader('Nettoyage et Préparation des données')   
     
+    st.write("Dataframe original")
+    st.dataframe(df.head())
+
     if st.checkbox("Afficher les valeurs manquantes"):
         st.dataframe(df.isna().sum())
+        st.write("On constate énormément de valeurs manquantes sur les dernières questions")
+        st.write("Total valeurs manquantes :", df.isna().sum().sum())
+        
+        st.markdown("---")
 
+    st.subheader("9 étapes : ")
+    st.write("1.Suppression première ligne")
+    st.write("2.Supression lignes dont la valeur duration est inf à 2 min")
+    st.write("3.Supression des lignes où la réponse à Q6 est I have never written Code")
+    st.write("4.Supression des colonnes avec questions Projection dans deux ans")
+    st.write("5.Regroupement par famille de métiers")
+    st.write("6.Supression de colonnes peu pertinentes avec bcp de valeurs manquantes (Q11, Q13, Q15, Q20, Q21, Q22, Q24, Q25")
+    st.write("7.Supression des colonnes avec taux de réponse inférieur à 50%")
+    st.write("8.Remplacement des valeurs par 0 ou 1 pour les colonnes contenant des réponses binaires")
+    st.write("9.Remplacement des dernières valeurs vides par leur moyenne")
+    
+    #Récupération var df_new dans la session
+    df_new = nettoyage(df)
+    st.session_state.df_new = df_new
+    
+    st.markdown("---")
+    #Check des valeurs de Q5 filtrées
+    
+    col1, col2 = st.columns(2)
+
+    col1.write("Variables cibles avant regroupement et nettoyage")
+    col1.write(df['Q5'].value_counts())
+
+    col2.write("Variables cibles après regroupement")
+    col2.write(df_new['Q5'].value_counts())
+    
+    st.markdown("---")
+    
+    st.write("Dataframe nettoyé")
+    st.dataframe(df_new.head())
+
+    if st.checkbox("Afficher les valeurs manquantes après nettoyage"):
+        st.dataframe(df_new.isna().sum())
+        st.write("Total valeurs manquantes :", df_new.isna().sum().sum())
+      
 elif page == pages[1]:
     
-    st.subheader('Data Vizualisation')    
+    st.subheader('Data Vizualisation')  
+    
+    #Récupération var df_new dans la session
+    df_new = st.session_state.df_new
     
     fig = plt.figure()
-    sns.countplot(x = "Q1", data = df)
+    sns.countplot(x = "Q1", data = df_new)
     st.pyplot(fig)
     
     fig = plt.figure()
-    sns.countplot(x = "Q6", data = df)
+    sns.countplot(x = "Q6", data = df_new)
     st.pyplot(fig)
     
 elif page == pages[2]:
     
     st.subheader('Modélisation : Méthode supervisée')
-
-    #Conversion des valeurs vides des colonnes contenant les sous questions (identifiées par "_" en 0 et des valeurs existantes en 1)
-    for column in df_new.columns:
-        if "_" in column:
-            df_new[column] = np.where(df_new[column].fillna('') != '', 1, 0)
-
-    #On exclue les lignes contenant les vaariables cibles qui ne nous intéressent pas 
-    #On réserve le dataframe de côté pour une éventuelle application plus tard
-
-    # On garde de côté un df contenant ces valeurs
-    excluded_values = ["Student", "Other", "Currently not employed"]
-    df_backup = df_new[df_new['Q5'].isin(excluded_values)]
     
-    #On vire les lignes qui ne nous concernent pas du dataframe
-    df_new = df_new.drop(df_new[df_new['Q5'].isin(excluded_values)].index)  
-    
+    #Récupération var df_new dans la session
+    df_new = st.session_state.df_new
+
     #st.dataframe(df_new.head(20))
     #st.dataframe(df_backup.head(20))
     
     #Input radio de filtrage de la variable cible
-    filter_title = st.radio(label = "Filtrage des Variables cibles", 
-                                options = ['Oui', 'Non'])  
+    #filter_title = st.radio(label = "Regroupement des Variables cibles", 
+                                #options = ['Oui', 'Non'])  
 
-    df_new['Q5'] = title_filtering(filter_title, df_new['Q5'])
+    #df_new['Q5'] = title_filtering(filter_title, df_new['Q5'])
     
     #Check des valeurs de Q5 filtrées
-    st.write(df_new['Q5'].value_counts())
+    #st.write(df_new['Q5'].value_counts())
     
     
     #Séparation et Encodage variable cible
@@ -148,8 +149,8 @@ elif page == pages[2]:
 
     #Séparation des Variables explicatives
     feats = df_new.drop('Q5', axis = 1)
-
-    X_train, X_test, y_train, y_test = train_test_split(feats, target , test_size=0.25, random_state=42)
+    
+    X_train, X_test, y_train, y_test = train_test_split(feats, target , test_size=0.21, random_state=42)
 
     #On isole les variables cat des deux jeux
     df_cat_train = X_train.select_dtypes(include='object')
@@ -173,8 +174,8 @@ elif page == pages[2]:
     X_test = pd.concat([df_encoded_test, df_new_test], axis=1)
     
     #Checkpoint
-    #st.write("Format de X_test: ", X_test.shape)
-    #st.write("Format de X_train: ", X_train.shape)
+    st.write("Format de X_test: ", X_test.shape)
+    st.write("Format de X_train: ", X_train.shape)
     #st.write("On constate que le train_test_split a laissé une colonne surnuméraire dans un des jeux")
     
     #Détection de la colonne en trop
@@ -189,7 +190,7 @@ elif page == pages[2]:
         #st.write("Il n'y a pas de colonne surnuméraire dans X_train.")
     
     #Elimination de la colonne en trop
-    X_train = X_train.drop("Q32_Domo", axis=1)
+    #X_train = X_train.drop("Q32_Domo", axis=1)
     
     #Normalisation des données
     scaler = StandardScaler() # Création de l'instance StandardScaler
@@ -209,7 +210,7 @@ elif page == pages[2]:
                                 options = ['Régression logistique', 'Arbre de décision', 'KNN', 'Forêt aléatoire'])    
     
     #Appel fonction d'entrainement du modèle
-    score, model = train_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test)
+    score, model, axes = train_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test)
     #model = train_model(model_choisi)
     
     #Affichage du score
@@ -275,7 +276,7 @@ elif page == pages[2]:
                                 options = ['t-SNE', 'K-means'])    
     
     #Appel fonction d'entrainement du modèle
-    score, model = train_model(methode_choisie, X_train_reduced, y_train, X_test_reduced, y_test)
+    score, model, axes = train_model(methode_choisie, X_train_reduced, y_train, X_test_reduced, y_test)
     
     #Affichage graphique axes
     #axes_figure(X_train_reduced, y_train, reduction_choice)

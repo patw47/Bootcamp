@@ -24,11 +24,24 @@ from sklearn.metrics import classification_report
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.cluster import KMeans
 from sklearn.model_selection import GridSearchCV
+from sklearn.metrics import silhouette_score
 import warnings
 
 # Ignorer les avertissements
 warnings.filterwarnings("ignore")
 
+def colonnes_incompletes(dataframe, seuil):
+    colonnes_incompletes = []
+    total_lignes = len(dataframe)
+
+    for colonne in dataframe.columns:
+        nb_reponses = dataframe[colonne].count()
+        ratio_reponses = nb_reponses / total_lignes
+
+        if ratio_reponses < seuil:
+            colonnes_incompletes.append(colonne)
+
+    return colonnes_incompletes
 
 def axes_figure(X_train_reduced, y_train, reduction_choice):
     '''
@@ -180,9 +193,44 @@ def grid_search_params(best_model, param_grid, X_train_reduced, X_test_reduced, 
     # Renvoie les prédictions et les meilleurs hyperparamètres
     return grid_search.best_params_, y_test, y_pred
 
+def find_optimal_clusters_tsne(X, max_clusters):
+    tsne = TSNE(n_components=2)
+    X_tsne = tsne.fit_transform(X)
+    
+    inertias = []
+    for n_clusters in range(2, max_clusters+1):
+        kmeans = KMeans(n_clusters=n_clusters)
+        kmeans.fit(X_tsne)
+        inertias.append(kmeans.inertia_)
+    
+    plt.plot(range(2, max_clusters+1), inertias)
+    plt.xlabel('Nombre de clusters')
+    plt.ylabel('Inertie')
+    plt.title('Méthode du coude (Elbow method)')
+    st.pyplot(plt.gcf())
+    
+    optimal_clusters = st.number_input("Entrez le nombre optimal de clusters selon la méthode du coude :", min_value=2, max_value=max_clusters, step=1)
+    
+    return optimal_clusters
+
+
+def find_optimal_clusters_kmeans(X, max_clusters):
+    silhouette_scores = []
+    for n_clusters in range(2, max_clusters+1):
+        kmeans = KMeans(n_clusters=n_clusters)
+        labels = kmeans.fit_predict(X)
+        silhouette_scores.append(silhouette_score(X, labels))
+    
+    optimal_clusters = silhouette_scores.index(max(silhouette_scores)) + 2  # +2 pour compenser le range de 2 à max_clusters
+    
+    return optimal_clusters
+
+
 def train_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
-    model = 0
-    if model_choisi == 'Régression logistique' :
+    model = None
+    axes = None
+    
+    if model_choisi == 'Régression logistique':
         model = LogisticRegression()
     elif model_choisi == "Arbre de décision":
         model = DecisionTreeClassifier()
@@ -191,25 +239,24 @@ def train_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
     elif model_choisi == "Forêt aléatoire":
         model = RandomForestClassifier()
     elif model_choisi == "K-means":
-        model = KMeans(n_clusters=3)
+        optimal_clusters = find_optimal_clusters_kmeans(X_train_reduced, max_clusters=10)
+        model = KMeans(n_clusters=optimal_clusters)
+        axes = model.fit_transform(X_train_reduced)
+        labels = model.predict(X_train_reduced)
     elif model_choisi == "t_SNE":
-        model = TSNE(n_components=2, n_clusters=3)
+        tsne = TSNE(n_components=2)
+        optimal_clusters = find_optimal_clusters_kmeans(X_train_reduced, max_clusters=10)
+        axes = tsne.fit_transform(X_train_reduced)
+        labels = KMeans(optimal_clusters).fit_predict(X_train_reduced)  # Ou utilisez le nombre de clusters souhaité
+        plot_clusters(axes, labels)
   
-    if model_choisi != "K-means" and model_choisi != "t-SNE":
+    if model_choisi != "K-means" and model_choisi != "t_SNE":
         model.fit(X_train_reduced, y_train)
         score = model.score(X_test_reduced, y_test)
-        return score, model
+        axes = 0
+        return score, model, axes
     
     else:
-        if model_choisi == "K-means":
-            axes = model.fit_transform(X_train_reduced)
-            labels = model.predict(X_train_reduced)
-        else:
-            tsne = TSNE(n_components=2)
-            axes = tsne.fit_transform(X_train_reduced)
-            kmeans = KMeans(n_clusters=3)
-            labels = kmeans.fit_predict(X_train_reduced)
-            
         score = 0
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -218,7 +265,30 @@ def train_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
         ax.set_ylabel('Axe 2')
         ax.set_title(model_choisi)
         st.pyplot(fig)
-        return score, model
+        
+        return score, model, axes
+    
+def plot_clusters(axes, labels):
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(axes[:, 0], axes[:, 1], c=labels, cmap=plt.cm.Spectral)
+    ax.set_xlabel('Axe 1')
+    ax.set_ylabel('Axe 2')
+    ax.set_title('Projection t-SNE avec couleurs de cluster')
+    return fig
+
+def plot_elbow_curve(X, max_clusters):
+    inertias = []
+    for n_clusters in range(2, max_clusters+1):
+        kmeans = KMeans(n_clusters=n_clusters)
+        kmeans.fit(X)
+        inertias.append(kmeans.inertia_)
+    
+    plt.plot(range(2, max_clusters+1), inertias)
+    plt.xlabel('Nombre de clusters')
+    plt.ylabel('Inertie')
+    plt.title('Méthode du coude (Elbow method)')
+    st.pyplot(plt.gcf())
         
         
         
