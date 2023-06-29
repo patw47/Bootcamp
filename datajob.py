@@ -165,8 +165,6 @@ elif page == pages[2]:
     
     st.subheader('Modélisation : Méthode supervisée')
     
-    modelling1_completed = False 
-    
     #Selectbox Choix de la méthode de réduction
     reduction_choice = st.selectbox(label = "Choix de la méthode de réduction", 
                                 options = ['PCA', 'LDA'])    
@@ -187,8 +185,8 @@ elif page == pages[2]:
     st.write("Score :", score)
     
     #Affichage graphique variance expliquée
-    if reduction_choice == 'PCA':
-        variance_graph(reduction)
+    #if reduction_choice == 'PCA':
+        #variance_graph(reduction)
        
     st.markdown("**Recherche des meilleurs hyperparamètres :**")
     col1, col2 = st.columns(2)
@@ -216,33 +214,26 @@ elif page == pages[2]:
 
        st.write("Rapport de classification :")
        st.text(display_crosstab(best_model, X_test_reduced, y_test)[1])
-       
-       modelling1_completed = True
-      
-    modelling2_completed = False  # Drapeau pour indiquer si la modélisation est terminée
+
     
-    if modelling1_completed:
-        
-        st.subheader('Modélisation : Méthode non supervisée')
+    st.subheader('Modélisation : Méthode non supervisée')
     #Selectbox avec Choix du modèle
-        methode_choisie = st.selectbox(label = "Choix du modèle", 
+    methode_choisie = st.selectbox(label = "Choix du modèle", 
                                 options = ['K-means', 'Clustering Hiérarchique', 'Mean Shift'])    
     
     #Appel fonction d'entrainement du modèle
-        model, labels = train_non_supervised_model(methode_choisie, X_train_reduced, y_train, X_test_reduced, y_test)   
+    model, labels = train_non_supervised_model(methode_choisie, X_train_reduced, y_train, X_test_reduced, y_test)   
           
-        search_clusters(methode_choisie, X_train_reduced)
+    search_clusters(methode_choisie, X_train_reduced)
     
-        #Boutons d'affichage des clusters
-        col1, col2 = st.columns(2)
-        search_clusters = col1.button("Afficher les clusters", key="searchcluster")
-        reset_button = col2.button("Reset", key="resetclusters")
+    #Boutons d'affichage des clusters
+    col1, col2 = st.columns(2)
+    search_clusters = col1.button("Afficher les clusters", key="searchcluster")
+    reset_button = col2.button("Reset", key="resetclusters")
         
-        if reset_button:
-            search_clusters = False
-            reset_button = False
+    if reset_button:
+        search_clusters = False
+        reset_button = False
         
-        if search_clusters:     
-            display_clusters(methode_choisie, X_train_reduced) 
-            
-            modelling2_completed = True
+    if search_clusters:     
+        display_clusters(methode_choisie, X_train_reduced) 
