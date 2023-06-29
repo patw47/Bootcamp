@@ -3,6 +3,7 @@
 Created on Tue Jun 27 10:17:41 2023
 
 @author: PatriciaWintrebert
+
 """
 import numpy as np
 import pandas as pd
@@ -63,8 +64,8 @@ def nettoyage(df):
     cols_to_drop = ['Q11', 'Q13', 'Q15', 'Q20', 'Q21', 'Q22', 'Q24', 'Q25']
     df_new = df_new.drop(cols_to_drop, axis=1)
 
-    #On vire les colonnes avec taux de réponse inf à 50%
-    cols = colonnes_incompletes(df_new, 0.5)
+    #On vire les colonnes avec taux de réponse inf à 90%
+    cols = colonnes_incompletes(df_new, 0.50)
     df_new = df_new.drop(cols, axis=1)
     
     #Conversion des valeurs vides des colonnes contenant les sous questions (identifiées par "_" en 0 et des valeurs existantes en 1)

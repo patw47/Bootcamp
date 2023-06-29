@@ -6,18 +6,17 @@ Created on Fri Jun  9 11:09:49 2023
 """
 
 import pandas as pd
+import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import streamlit as st
 from main_functions import nettoyage
-from modeling_functions import reduction, train_model, display_crosstab
-#from modeling_functions import axes_figure, reduction, train_model, display_crosstab, variance_graph, grid_search_model, get_param_grid, train_best_model,grid_search_params
+from modeling_functions import reduction, train_supervised_model, display_crosstab, select_best_model, train_non_supervised_model
 from sklearn.model_selection import train_test_split
+from sklearn.cluster import KMeans, AgglomerativeClustering, MeanShift
 from sklearn.preprocessing import StandardScaler
-from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import GridSearchCV
-from sklearn.metrics import classification_report
+from scipy.spatial.distance import cdist
 import warnings
 
 # Ignorer les avertissements
@@ -26,23 +25,21 @@ warnings.filterwarnings("ignore")
 st.title('Projet DataJob')
 
 # Initialisation des données dans st.session_state
-if 'df' not in st.session_state:
-    st.session_state.df = None
+#if 'df' not in st.session_state:
+   # st.session_state.df = None
 
-if 'df_new' not in st.session_state:
-    st.session_state.df_new = None
+#if 'df_new' not in st.session_state:
+    #st.session_state.df_new = None
 
 # Chargement des données si elles n'ont pas déjà été chargées
-if st.session_state.df is None:
-    st.session_state.df = pd.read_csv('kaggle_survey_2020_responses.csv')
-
-df = st.session_state.df
-
+#if st.session_state.df is None:
+#st.session_state.df = pd.read_csv('kaggle_survey_2020_responses.csv')
+df = pd.read_csv('kaggle_survey_2020_responses.csv')
+st.session_state.df = df
 
 pages = ['Exploration des données', 
          'Data Visualisation',
-         'Modélisation',
-         'Conclusion']
+         'Modélisation']
 
 st.markdown("[Lien vers le rapport écrit ](https://docs.google.com/document/d/1DLS5DsbR-z5cnq5FYZIlrufrJUUiUxgFgHqk9vBGz2c/edit?usp=sharing')")
 st.markdown("[Lien vers les données sur le site de Kaggle](https://www.kaggle.com/c/kaggle-survey-2020/overview')")
@@ -64,7 +61,7 @@ if page == pages[0]:
         
         st.markdown("---")
 
-    st.subheader("9 étapes : ")
+    st.subheader("Préparation des données en 9 étapes : ")
     st.write("1.Suppression première ligne")
     st.write("2.Supression lignes dont la valeur duration est inf à 2 min")
     st.write("3.Supression des lignes où la réponse à Q6 est I have never written Code")
@@ -115,24 +112,15 @@ elif page == pages[1]:
     st.pyplot(fig)
     
 elif page == pages[2]:
-    
-    st.subheader('Modélisation : Méthode supervisée')
+     
+    st.subheader("Encodage des données en 4 étapes : ")
+    st.write("1.Séparation variable cible et encodage avec LabelEncoder")
+    st.write("2.Séparation jeu de test et jeu d'entrainement")
+    st.write("3.Encodage des variables catégorielles avec Getdummies")
+    st.write("4.Réduction au choix avec PCA ou LDA")
     
     #Récupération var df_new dans la session
     df_new = st.session_state.df_new
-
-    #st.dataframe(df_new.head(20))
-    #st.dataframe(df_backup.head(20))
-    
-    #Input radio de filtrage de la variable cible
-    #filter_title = st.radio(label = "Regroupement des Variables cibles", 
-                                #options = ['Oui', 'Non'])  
-
-    #df_new['Q5'] = title_filtering(filter_title, df_new['Q5'])
-    
-    #Check des valeurs de Q5 filtrées
-    #st.write(df_new['Q5'].value_counts())
-    
     
     #Séparation et Encodage variable cible
     label_encoder = LabelEncoder()
@@ -165,29 +153,18 @@ elif page == pages[2]:
     X_test = pd.concat([df_encoded_test, df_new_test], axis=1)
     
     #Checkpoint
-    st.write("Format de X_test: ", X_test.shape)
-    st.write("Format de X_train: ", X_train.shape)
+    st.write("Format de X_test après processing: ", X_test.shape)
+    st.write("Format de X_train après processing: ", X_train.shape)
     #st.write("On constate que le train_test_split a laissé une colonne surnuméraire dans un des jeux")
     
-    #Détection de la colonne en trop
-    #extra_column = None
-    #for column in X_train.columns:
-        #if column not in X_test.columns:
-            #extra_column = column
-            #break
-    #if extra_column is not None:
-        #st.write("La colonne surnuméraire dans X_train est :", extra_column, "Nous choissons de la supprimer.")
-    #else:
-        #st.write("Il n'y a pas de colonne surnuméraire dans X_train.")
-    
-    #Elimination de la colonne en trop
-    #X_train = X_train.drop("Q32_Domo", axis=1)
-    
     #Normalisation des données
-    scaler = StandardScaler() # Création de l'instance StandardScaler
-    X_train_scaled = scaler.fit_transform(X_train)
-    X_test_scaled = scaler.transform(X_test)
-
+    #scaler = StandardScaler() # Création de l'instance StandardScaler
+    #X_train_scaled = scaler.fit_transform(X_train)
+    #X_test_scaled = scaler.transform(X_test)
+    X_train_scaled = X_train
+    X_test_scaled = X_test
+    
+    st.subheader('Modélisation : Méthode supervisée')
     
     #Selectbox Choix de la méthode de réduction
     reduction_choice = st.selectbox(label = "Choix de la méthode de réduction", 
@@ -196,30 +173,18 @@ elif page == pages[2]:
     #Appel fonction réduction de données
     X_train_reduced, X_test_reduced, reduction = reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled)
     
+    
     #Selectbox avec Choix du modèle
     model_choisi = st.selectbox(label = "Choix du modèle", 
-                                options = ['Régression logistique', 'Arbre de décision', 'KNN', 'Forêt aléatoire'])    
+                                options = ['Régression logistique', 'Arbre de décision', 'KNN', 'Forêt aléatoire', 'Boosting'])    
     
     #Appel fonction d'entrainement du modèle
-    score, model, axes = train_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test)
+    score, model = train_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test)
     #model = train_model(model_choisi)
     
     #Affichage du score
     st.write("Score :", score)
        
-
-    #Affichage tableau prédiction vs réalité
-    st.write("Comparaison prédictions vs réalité :")
-    st.write(display_crosstab(model, X_test_reduced, y_test)[0])
-    #st.dataframe(display_crosstab(model, X_test_reduced, y_test)[0])
-    #Affichage rapport de classification
-    st.write("Rapport de classification :")
-    st.text(display_crosstab(model, X_test_reduced, y_test)[1])
-
-    #Affichage graphique variance expliquée
-    #if reduction_choice == 'PCA':
-        #variance_graph(reduction) 
-
     st.markdown("**Recherche des meilleurs hyperparamètres :**")
     col1, col2 = st.columns(2)
 
@@ -235,42 +200,115 @@ elif page == pages[2]:
         
     if search_param:
        
-       #Récupération des paramètres possible pour chsque modèle
-       #param_grid, model = get_param_grid(model_choisi)
+       best_model, best_params = select_best_model(model_choisi, X_train_reduced, y_train)
        
-       # Utilisation de la fonction grid_search_model 
-       #best_model, y_test, y_pred, best_params = grid_search_model(model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test)
-       
-       #score_best_model = train_best_model(model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test)
-       
-       param_grid = {
-           'C': [0.1, 1.0, 10.0, 100.0],
-           'penalty': ['l1', 'l2', 'elasticnet'],
-           'solver': ['newton-cg', 'lbfgs', 'liblinear', 'sag', 'saga']   
-       }
-
-
-       # Créer le modèle de régression logistique
-       model = LogisticRegression()
-       grid_search = GridSearchCV(estimator=model, param_grid=param_grid, cv=5)
-       grid_search.fit(X_train_reduced, y_train)
-       best_model = grid_search.best_estimator_
-       y_pred = best_model.predict(X_test_reduced)
-       st.write(classification_report(y_test, y_pred))
+       st.write("Les meilleurs hyperparamètres sont :", best_params)
        score = best_model.score(X_test_reduced, y_test)
-       st.write("Score : ", score)
-    
+       st.write("Score après optimisation des hyperparamètres : ", score)
+       
+       st.write("Comparaison prédictions vs réalité :")
+       st.write(display_crosstab(best_model, X_test_reduced, y_test)[0])
+
+       st.write("Rapport de classification :")
+       st.text(display_crosstab(best_model, X_test_reduced, y_test)[1])
+
+       #Affichage graphique variance expliquée
+       #if reduction_choice == 'PCA':
+           #variance_graph(reduction) 
+   
     st.subheader('Modélisation : Méthode non supervisée')
     
     #Selectbox avec Choix du modèle
     methode_choisie = st.selectbox(label = "Choix du modèle", 
-                                options = ['t-SNE', 'K-means'])    
+                                options = ['K-means', 'Clustering Hiérarchique', 'Mean Shift'])    
     
     #Appel fonction d'entrainement du modèle
-    score, model, axes = train_model(methode_choisie, X_train_reduced, y_train, X_test_reduced, y_test)
+    model, labels = train_non_supervised_model(methode_choisie, X_train_reduced, y_train, X_test_reduced, y_test)
     
     #Affichage graphique axes
     #axes_figure(X_train_reduced, y_train, reduction_choice)
     
-elif page == pages[3]:  
-    st.subheader('Conclusion')
+    #On échantillone les données pour limiter le calcul
+    sample_size = 1000  # Taille de l'échantillon souhaitée
+    indices = np.random.choice(len(X_train_reduced), size=sample_size, replace=False)
+    X_train_reduced_sample = X_train_reduced[indices]
+
+    # Liste des nombres de clusters
+    range_n_clusters = range(1, 101, 2)
+
+    # Initialisation de la liste de distorsions
+    distorsions = []
+    bandwidths = [0.1, 0.5, 1.0, 2.0]
+
+    # Calcul des distorsions pour les différents modèles
+    for n_clusters in range_n_clusters:
+
+        if methode_choisie == "K-means":
+            cluster = KMeans(n_clusters = n_clusters)
+            cluster.fit(X_train_reduced_sample)
+            distorsions.append(sum(np.min(cdist(X_train_reduced_sample, cluster.cluster_centers_, 'euclidean'), axis=1)) / np.size(X_train_reduced_sample, axis = 0))
+            axe = range_n_clusters
+            
+        elif methode_choisie == "Clustering Hiérarchique":
+            cluster = AgglomerativeClustering(n_clusters = n_clusters)
+            labels = cluster.fit_predict(X_train_reduced)
+            centroids = []
+            for label in range(n_clusters):
+                centroid = np.mean(X_train_reduced[labels == label], axis=0)
+                centroids.append(centroid)
+            distorsion = sum(np.min(cdist(X_train_reduced, centroids, 'euclidean'), axis=1)) / np.size(X_train_reduced, axis=0)
+            distorsions.append(distorsion)
+            axe = range_n_clusters
+    
+        elif methode_choisie == "Mean Shift":
+            #cluster = MeanShift(n_clusters = n_clusters)
+            for bandwidth in bandwidths:
+                cluster = MeanShift(bandwidth=bandwidth)
+                labels = cluster.fit_predict(X_train_reduced_sample)
+                unique_labels = np.unique(labels)
+                centroids = []
+                for label in unique_labels:
+                    centroid = np.mean(X_train_reduced_sample[labels == label], axis=0)
+                    centroids.append(centroid)
+                distorsion = sum(np.min(cdist(X_train_reduced_sample, centroids, 'euclidean'), axis=1)) / np.size(X_train_reduced_sample, axis=0)
+                distorsions.append(distorsion)
+                axe = bandwidth
+                
+    fig = plt.figure()
+    plt.plot(axe, distorsions, 'gx-')
+    plt.xlabel('Nombre de Clusters K')
+    plt.ylabel('Distorsion SSW/(SSW+SSB)')
+    plt.title('Méthode du coude affichant le nombre de clusters optimal pour ' + methode_choisie)
+    ax.grid(True)
+    st.pyplot(fig)
+    
+    col1, col2 = st.columns(2)
+    # Bouton "Lancer l'optimisation" dans la première colonne
+    search_clusters = col1.button("Afficher les clusters", key="searchcluster")
+    # Bouton "Réinitialiser" dans la deuxième colonne
+    reset_button = col2.button("Reset", key="resetclusters")
+    
+    if reset_button:
+        search_clusters = False
+        reset_button = False
+        
+    if search_clusters:
+        
+        if methode_choisie == "K-means":
+            model = KMeans(n_clusters=8)
+            labels = model.fit_predict(X_train_reduced)
+        elif methode_choisie == "Clustering Hiérarchique":
+            model = AgglomerativeClustering(n_clusters=5)
+            labels = model.fit_predict(X_train_reduced)
+        elif methode_choisie == "Mean Shift":
+            model = MeanShift(bandwidth=0.5)
+            labels = model.fit_predict(X_train_reduced)
+            
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.scatter(X_train_reduced[:, 0], X_train_reduced[:, 1], c=model.labels_, cmap=plt.cm.Spectral)
+        ax.set_xlabel('Axe 1')
+        ax.set_ylabel('Axe 2')
+        ax.set_title('Visualisation des clusters ')
+        st.pyplot(fig)   
+        
