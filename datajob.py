@@ -11,12 +11,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import streamlit as st
 from main_functions import nettoyage
-from modeling_functions import reduction, train_supervised_model, display_crosstab, select_best_model, train_non_supervised_model
+from modeling_functions import reduction, variance_graph, train_supervised_model, display_crosstab, select_best_model, train_non_supervised_model, search_clusters, display_clusters
 from sklearn.model_selection import train_test_split
 from sklearn.cluster import KMeans, AgglomerativeClustering, MeanShift
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import LabelEncoder
-from scipy.spatial.distance import cdist
 import warnings
 
 # Ignorer les avertissements
@@ -43,7 +42,7 @@ pages = ['Exploration des données',
 
 st.markdown("[Lien vers le rapport écrit ](https://docs.google.com/document/d/1DLS5DsbR-z5cnq5FYZIlrufrJUUiUxgFgHqk9vBGz2c/edit?usp=sharing')")
 st.markdown("[Lien vers les données sur le site de Kaggle](https://www.kaggle.com/c/kaggle-survey-2020/overview')")
-
+st.markdown("[Lien GitHub](https://github.com/patw47/Bootcamp)")
 st.sidebar.title("Sommaire")
 page = st.sidebar.radio('Aller vers', pages)
 
@@ -166,6 +165,8 @@ elif page == pages[2]:
     
     st.subheader('Modélisation : Méthode supervisée')
     
+    modelling1_completed = False 
+    
     #Selectbox Choix de la méthode de réduction
     reduction_choice = st.selectbox(label = "Choix de la méthode de réduction", 
                                 options = ['PCA', 'LDA'])    
@@ -184,10 +185,14 @@ elif page == pages[2]:
     
     #Affichage du score
     st.write("Score :", score)
+    
+    #Affichage graphique variance expliquée
+    if reduction_choice == 'PCA':
+        variance_graph(reduction)
        
     st.markdown("**Recherche des meilleurs hyperparamètres :**")
     col1, col2 = st.columns(2)
-
+   
     # Bouton "Lancer l'optimisation" dans la première colonne
     search_param = col1.button("Lancer l'optimisation")
 
@@ -211,104 +216,33 @@ elif page == pages[2]:
 
        st.write("Rapport de classification :")
        st.text(display_crosstab(best_model, X_test_reduced, y_test)[1])
-
-       #Affichage graphique variance expliquée
-       #if reduction_choice == 'PCA':
-           #variance_graph(reduction) 
-   
-    st.subheader('Modélisation : Méthode non supervisée')
+       
+       modelling1_completed = True
+      
+    modelling2_completed = False  # Drapeau pour indiquer si la modélisation est terminée
     
+    if modelling1_completed:
+        
+        st.subheader('Modélisation : Méthode non supervisée')
     #Selectbox avec Choix du modèle
-    methode_choisie = st.selectbox(label = "Choix du modèle", 
+        methode_choisie = st.selectbox(label = "Choix du modèle", 
                                 options = ['K-means', 'Clustering Hiérarchique', 'Mean Shift'])    
     
     #Appel fonction d'entrainement du modèle
-    model, labels = train_non_supervised_model(methode_choisie, X_train_reduced, y_train, X_test_reduced, y_test)
+        model, labels = train_non_supervised_model(methode_choisie, X_train_reduced, y_train, X_test_reduced, y_test)   
+          
+        search_clusters(methode_choisie, X_train_reduced)
     
-    #Affichage graphique axes
-    #axes_figure(X_train_reduced, y_train, reduction_choice)
-    
-    #On échantillone les données pour limiter le calcul
-    sample_size = 1000  # Taille de l'échantillon souhaitée
-    indices = np.random.choice(len(X_train_reduced), size=sample_size, replace=False)
-    X_train_reduced_sample = X_train_reduced[indices]
-
-    # Liste des nombres de clusters
-    range_n_clusters = range(1, 101, 2)
-
-    # Initialisation de la liste de distorsions
-    distorsions = []
-    bandwidths = [0.1, 0.5, 1.0, 2.0]
-
-    # Calcul des distorsions pour les différents modèles
-    for n_clusters in range_n_clusters:
-
-        if methode_choisie == "K-means":
-            cluster = KMeans(n_clusters = n_clusters)
-            cluster.fit(X_train_reduced_sample)
-            distorsions.append(sum(np.min(cdist(X_train_reduced_sample, cluster.cluster_centers_, 'euclidean'), axis=1)) / np.size(X_train_reduced_sample, axis = 0))
-            axe = range_n_clusters
+        #Boutons d'affichage des clusters
+        col1, col2 = st.columns(2)
+        search_clusters = col1.button("Afficher les clusters", key="searchcluster")
+        reset_button = col2.button("Reset", key="resetclusters")
+        
+        if reset_button:
+            search_clusters = False
+            reset_button = False
+        
+        if search_clusters:     
+            display_clusters(methode_choisie, X_train_reduced) 
             
-        elif methode_choisie == "Clustering Hiérarchique":
-            cluster = AgglomerativeClustering(n_clusters = n_clusters)
-            labels = cluster.fit_predict(X_train_reduced)
-            centroids = []
-            for label in range(n_clusters):
-                centroid = np.mean(X_train_reduced[labels == label], axis=0)
-                centroids.append(centroid)
-            distorsion = sum(np.min(cdist(X_train_reduced, centroids, 'euclidean'), axis=1)) / np.size(X_train_reduced, axis=0)
-            distorsions.append(distorsion)
-            axe = range_n_clusters
-    
-        elif methode_choisie == "Mean Shift":
-            #cluster = MeanShift(n_clusters = n_clusters)
-            for bandwidth in bandwidths:
-                cluster = MeanShift(bandwidth=bandwidth)
-                labels = cluster.fit_predict(X_train_reduced_sample)
-                unique_labels = np.unique(labels)
-                centroids = []
-                for label in unique_labels:
-                    centroid = np.mean(X_train_reduced_sample[labels == label], axis=0)
-                    centroids.append(centroid)
-                distorsion = sum(np.min(cdist(X_train_reduced_sample, centroids, 'euclidean'), axis=1)) / np.size(X_train_reduced_sample, axis=0)
-                distorsions.append(distorsion)
-                axe = bandwidth
-                
-    fig = plt.figure()
-    plt.plot(axe, distorsions, 'gx-')
-    plt.xlabel('Nombre de Clusters K')
-    plt.ylabel('Distorsion SSW/(SSW+SSB)')
-    plt.title('Méthode du coude affichant le nombre de clusters optimal pour ' + methode_choisie)
-    ax.grid(True)
-    st.pyplot(fig)
-    
-    col1, col2 = st.columns(2)
-    # Bouton "Lancer l'optimisation" dans la première colonne
-    search_clusters = col1.button("Afficher les clusters", key="searchcluster")
-    # Bouton "Réinitialiser" dans la deuxième colonne
-    reset_button = col2.button("Reset", key="resetclusters")
-    
-    if reset_button:
-        search_clusters = False
-        reset_button = False
-        
-    if search_clusters:
-        
-        if methode_choisie == "K-means":
-            model = KMeans(n_clusters=8)
-            labels = model.fit_predict(X_train_reduced)
-        elif methode_choisie == "Clustering Hiérarchique":
-            model = AgglomerativeClustering(n_clusters=5)
-            labels = model.fit_predict(X_train_reduced)
-        elif methode_choisie == "Mean Shift":
-            model = MeanShift(bandwidth=0.5)
-            labels = model.fit_predict(X_train_reduced)
-            
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.scatter(X_train_reduced[:, 0], X_train_reduced[:, 1], c=model.labels_, cmap=plt.cm.Spectral)
-        ax.set_xlabel('Axe 1')
-        ax.set_ylabel('Axe 2')
-        ax.set_title('Visualisation des clusters ')
-        st.pyplot(fig)   
-        
+            modelling2_completed = True

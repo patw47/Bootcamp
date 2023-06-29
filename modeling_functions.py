@@ -20,6 +20,7 @@ from sklearn.cluster import KMeans, AgglomerativeClustering, MeanShift
 from sklearn.metrics import silhouette_score, davies_bouldin_score
 from sklearn.model_selection import GridSearchCV
 from scipy.cluster.hierarchy import linkage, dendrogram
+from scipy.spatial.distance import cdist
 import warnings
 
 # Ignorer les avertissements
@@ -95,7 +96,7 @@ def variance_graph(reduction):
     #st.write('Les valeurs propres sont :', reduction.explained_variance_)
     fig = plt.figure()
     # Tracer le graphe représentant la variance expliquée en fonction du nombre de composantes.
-    plt.plot(np.arange(1, 439), reduction.explained_variance_)
+    plt.plot(np.arange(1, 112), reduction.explained_variance_)
     plt.xlabel('Nombre de facteurs')
     plt.ylabel('Valeurs propres')
     # Afficher le graphe dans Streamlit
@@ -139,7 +140,7 @@ def train_non_supervised_model(model_choisi, X_train_reduced, y_train, X_test_re
       model = AgglomerativeClustering(n_clusters=3)  # Modifier le nombre de clusters selon vos besoins
       labels = model.fit_predict(X_train_reduced)
       # Calcul de la matrice de dissimilarité
-      linkage_matrix = linkage(X_train_reduced, method='complete', metric='euclidean')
+      #linkage_matrix = linkage(X_train_reduced, method='complete', metric='euclidean')
 
        # Construction du dendrogramme
       #fig = plt.figure()
@@ -240,3 +241,81 @@ def plot_clusters(axes, labels):
     ax.set_ylabel('Axe 2')
     ax.set_title('Projection t-SNE avec couleurs de cluster')
     return fig
+
+def search_clusters(methode_choisie, X_train_reduced):
+    # On échantillonne les données pour limiter le calcul
+    sample_size = 500  # Taille de l'échantillon
+    indices = np.random.choice(len(X_train_reduced), size=sample_size, replace=False)
+    X_train_reduced_sample = X_train_reduced[indices]
+
+    # Liste des nombres de clusters
+    range_n_clusters = range(1, 21)
+
+    # Initialisation des listes de distorsions et d'axes
+    distorsions = []
+    axes = []
+    bandwidths = [0.1, 0.5, 1.0, 2.0]
+
+    # Calcul des distorsions pour les différents modèles
+    for n_clusters in range_n_clusters:
+        if methode_choisie == "K-means":
+            cluster = KMeans(n_clusters=n_clusters)
+            cluster.fit(X_train_reduced_sample)
+            distorsions.append(
+                sum(np.min(cdist(X_train_reduced_sample, cluster.cluster_centers_, 'euclidean'), axis=1)) / np.size(
+                    X_train_reduced_sample, axis=0))
+            axes.append(n_clusters)
+
+        elif methode_choisie == "Clustering Hiérarchique":
+            cluster = AgglomerativeClustering(n_clusters=n_clusters)
+            labels = cluster.fit_predict(X_train_reduced)
+            centroids = []
+            for label in range(n_clusters):
+                centroid = np.mean(X_train_reduced[labels == label], axis=0)
+                centroids.append(centroid)
+            distorsion = sum(np.min(cdist(X_train_reduced, centroids, 'euclidean'), axis=1)) / np.size(X_train_reduced,
+                                                                                                         axis=0)
+            distorsions.append(distorsion)
+            axes.append(n_clusters)
+
+        elif methode_choisie == "Mean Shift":
+            for bandwidth in bandwidths:
+                cluster = MeanShift(bandwidth=bandwidth)
+                labels = cluster.fit_predict(X_train_reduced_sample)
+                unique_labels = np.unique(labels)
+                centroids = []
+                for label in unique_labels:
+                    centroid = np.mean(X_train_reduced_sample[labels == label], axis=0)
+                    centroids.append(centroid)
+                distorsion = sum(np.min(cdist(X_train_reduced_sample, centroids, 'euclidean'), axis=1)) / np.size(
+                    X_train_reduced_sample, axis=0)
+                distorsions.append(distorsion)
+                axes.append(bandwidth)
+
+    # Création et affichage de la figure du graphique
+    fig = plt.figure()
+    plt.plot(axes, distorsions, 'gx-')
+    plt.xlabel('Nombre de Clusters K')
+    plt.ylabel('Distorsion SSW/(SSW+SSB)')
+    plt.title('Méthode du coude affichant le nombre de clusters optimal pour ' + methode_choisie)
+    plt.grid(True)
+    st.pyplot(fig)
+            
+def display_clusters(methode_choisie, X_train_reduced):
+    if methode_choisie == "K-means":
+        model = KMeans(n_clusters=8)
+        model.fit_predict(X_train_reduced)
+    elif methode_choisie == "Clustering Hiérarchique":
+        model = AgglomerativeClustering(n_clusters=6)
+        model.fit_predict(X_train_reduced)
+    elif methode_choisie == "Mean Shift":
+        model = MeanShift(bandwidth=0.5)
+        model.fit_predict(X_train_reduced)
+        
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(X_train_reduced[:, 0], X_train_reduced[:, 1], c=model.labels_, cmap=plt.cm.Spectral)
+    ax.set_xlabel('Axe 1')
+    ax.set_ylabel('Axe 2')
+    ax.set_title('Visualisation des clusters ')
+    st.pyplot(fig)  
