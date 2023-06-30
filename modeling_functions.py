@@ -259,7 +259,6 @@ def search_clusters(methode_choisie, X_train_reduced):
     # Initialisation des listes de distorsions et d'axes
     distorsions = []
     axes = []
-    bandwidths = [0.1, 0.5, 1.0, 2.0]
 
     # Calcul des distorsions pour les différents modèles
     for n_clusters in range_n_clusters:
@@ -282,20 +281,6 @@ def search_clusters(methode_choisie, X_train_reduced):
                                                                                                          axis=0)
             distorsions.append(distorsion)
             axes.append(n_clusters)
-
-        elif methode_choisie == "Mean Shift":
-            for bandwidth in bandwidths:
-                cluster = MeanShift(bandwidth=bandwidth)
-                labels = cluster.fit_predict(X_train_reduced)
-                unique_labels = np.unique(labels)
-                centroids = []
-                for label in unique_labels:
-                    centroid = np.mean(X_train_reduced[labels == label], axis=0)
-                    centroids.append(centroid)
-                distorsion = sum(np.min(cdist(X_train_reduced, centroids, 'euclidean'), axis=1)) / np.size(
-                    X_train_reduced, axis=0)
-                distorsions.append(distorsion)
-                axes.append(bandwidth)
 
     return axes, distorsions
 
