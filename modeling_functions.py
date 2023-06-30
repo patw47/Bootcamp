@@ -118,8 +118,8 @@ def grid_search_params(best_model, param_grid, X_train_reduced, X_test_reduced, 
 @st.cache
 def train_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
     
-    X_train_reduced = reduce_sample(X_train_reduced)
-    y_train = reduce_y_train(y_train)
+    #X_train_reduced = reduce_sample(X_train_reduced)
+    #y_train = reduce_y_train(y_train)
     model = 0
     
     if model_choisi == 'Régression logistique':
@@ -258,7 +258,7 @@ def plot_clusters(axes, labels):
 @st.cache
 def search_clusters(methode_choisie, X_train_reduced):
     # On échantillonne les données pour limiter le calcul
-    X_train_reduced = reduce_sample(X_train_reduced)
+    #X_train_reduced = reduce_sample(X_train_reduced)
 
     # Liste des nombres de clusters
     range_n_clusters = range(1, 21)
@@ -304,13 +304,13 @@ def search_clusters(methode_choisie, X_train_reduced):
                 distorsions.append(distorsion)
                 axes.append(bandwidth)
 
-        return axes, distorsions
+    return axes, distorsions
 
 
 @st.cache
 def reduce_sample(X_train_reduced):
     # On échantillonne les données pour limiter le calcul
-    sample_size = 50  # Taille de l'échantillon
+    sample_size = 500  # Taille de l'échantillon
     indices = np.random.choice(len(X_train_reduced), size=sample_size, replace=False)
     X_train_reduced_sample = X_train_reduced[indices]
     return X_train_reduced_sample
