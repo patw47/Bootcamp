@@ -38,8 +38,9 @@ st.session_state.df = df
 
 pages = ['Exploration des données', 
          'Data Visualisation',
-         'Modélisation Supervisée',
-         'Modélisation non supervisée']
+         'Modélisation Supervisée'#,
+         #'Modélisation non supervisée'
+         ]
 
 st.markdown("[Lien vers le rapport écrit ](https://docs.google.com/document/d/1DLS5DsbR-z5cnq5FYZIlrufrJUUiUxgFgHqk9vBGz2c/edit?usp=sharing')")
 st.markdown("[Lien vers les données sur le site de Kaggle](https://www.kaggle.com/c/kaggle-survey-2020/overview')")
@@ -225,7 +226,7 @@ elif page == pages[2]:
     
     #df_new = st.session_state.df_new 
     
-    #X_train_reduced = st.sesstion_state.X_train_reduced
+    #X_train_reduced = st.session_state.X_train_reduced
     
     #Selectbox avec Choix du modèle
     methode_choisie = st.selectbox(label = "Choix du modèle", 
@@ -234,7 +235,16 @@ elif page == pages[2]:
     #Appel fonction d'entrainement du modèle
     model, labels = train_non_supervised_model(methode_choisie, X_train_reduced, y_train, X_test_reduced, y_test)   
           
-    search_clusters(methode_choisie, X_train_reduced)
+    axes, distorsions = search_clusters(methode_choisie, X_train_reduced)
+
+    # Création et affichage de la figure du graphique
+    fig = plt.figure()
+    plt.plot(axes, distorsions, 'gx-')
+    plt.xlabel('Nombre de Clusters K')
+    plt.ylabel('Distorsion SSW/(SSW+SSB)')
+    plt.title('Méthode du coude affichant le nombre de clusters optimal pour ' + methode_choisie)
+    plt.grid(True)
+    st.pyplot(fig)
     
     #Boutons d'affichage des clusters
     col1, col2 = st.columns(2)

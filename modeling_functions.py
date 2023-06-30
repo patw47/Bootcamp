@@ -304,14 +304,8 @@ def search_clusters(methode_choisie, X_train_reduced):
                 distorsions.append(distorsion)
                 axes.append(bandwidth)
 
-    # Création et affichage de la figure du graphique
-    fig = plt.figure()
-    plt.plot(axes, distorsions, 'gx-')
-    plt.xlabel('Nombre de Clusters K')
-    plt.ylabel('Distorsion SSW/(SSW+SSB)')
-    plt.title('Méthode du coude affichant le nombre de clusters optimal pour ' + methode_choisie)
-    plt.grid(True)
-    st.pyplot(fig)
+        return axes, distorsions
+
 
 @st.cache
 def reduce_sample(X_train_reduced):
