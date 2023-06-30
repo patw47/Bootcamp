@@ -260,7 +260,7 @@ def search_clusters(methode_choisie, X_train_reduced):
     #X_train_reduced = reduce_sample(X_train_reduced)
 
     # Liste des nombres de clusters
-    range_n_clusters = range(1, 21)
+    range_n_clusters = range(1, 11)
 
     # Initialisation des listes de distorsions et d'axes
     distorsions = []
@@ -309,7 +309,7 @@ def search_clusters(methode_choisie, X_train_reduced):
 @st.cache
 def reduce_sample(X_train_reduced):
     # On échantillonne les données pour limiter le calcul
-    sample_size = 50  # Taille de l'échantillon
+    sample_size = 100  # Taille de l'échantillon
     indices = np.random.choice(len(X_train_reduced), size=sample_size, replace=False)
     X_train_reduced_sample = X_train_reduced[indices]
     return X_train_reduced_sample
