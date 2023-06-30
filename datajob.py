@@ -239,7 +239,7 @@ elif page == pages[3]:
     
     #Selectbox avec Choix du modèle
     methode_choisie = st.selectbox(label = "Choix du modèle", 
-                                options = ['K-means', 'Clustering Hiérarchique', 'Mean Shift'])    
+                                options = ['K-means', 'Clustering Hiérarchique'])    
     
     #Appel fonction d'entrainement du modèle
     model, labels = train_non_supervised_model(methode_choisie, X_train_reduced, y_train, X_test_reduced, y_test)   

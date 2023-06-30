@@ -161,16 +161,11 @@ def train_non_supervised_model(model_choisi, X_train_reduced, y_train, X_test_re
       #ax.set_ylabel('Distance')
       #st.pyplot(fig)
 
-   elif model_choisi == 'Mean Shift':
-      model = MeanShift(bandwidth=0.5)
-      labels = model.fit_predict(X_train_reduced)
-
    else:
       raise ValueError("Méthode non prise en charge")
 
    return model, labels
 
-@st.cache
 def select_best_model(model_choisi, X_train_reduced, y_train):
     if model_choisi == 'Régression logistique':
         model = LogisticRegression()
@@ -220,7 +215,6 @@ def select_best_model(model_choisi, X_train_reduced, y_train):
 
     return best_model, best_params
 
-@st.cache
 def find_optimal_clusters(model, data, max_clusters):
     scores = []
     
