@@ -38,7 +38,8 @@ st.session_state.df = df
 
 pages = ['Exploration des données', 
          'Data Visualisation',
-         'Modélisation']
+         'Modélisation Supervisée',
+         'Modélisation non supervisée']
 
 st.markdown("[Lien vers le rapport écrit ](https://docs.google.com/document/d/1DLS5DsbR-z5cnq5FYZIlrufrJUUiUxgFgHqk9vBGz2c/edit?usp=sharing')")
 st.markdown("[Lien vers les données sur le site de Kaggle](https://www.kaggle.com/c/kaggle-survey-2020/overview')")
@@ -215,8 +216,15 @@ elif page == pages[2]:
        st.write("Rapport de classification :")
        st.text(display_crosstab(best_model, X_test_reduced, y_test)[1])
 
+
+#elif page == pages[3]:
     
     st.subheader('Modélisation : Méthode non supervisée')
+    
+    #df_new = st.session_state.df_new 
+    
+    X_train_reduced = st.sesstion_state.X_train_reduced
+    
     #Selectbox avec Choix du modèle
     methode_choisie = st.selectbox(label = "Choix du modèle", 
                                 options = ['K-means', 'Clustering Hiérarchique', 'Mean Shift'])    

@@ -26,6 +26,7 @@ import warnings
 # Ignorer les avertissements
 warnings.filterwarnings("ignore")
 
+@st.cache
 def axes_figure(X_train_reduced, y_train, reduction_choice):
     '''
     Parameters
@@ -49,6 +50,7 @@ def axes_figure(X_train_reduced, y_train, reduction_choice):
     ax.set_title("Données projetées sur les 2 axes de " + reduction_choice)
     st.pyplot(fig)
 
+@st.cache
 def reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled):
     '''
     Choix de la méthode de réduction pour le modèle
@@ -81,6 +83,7 @@ def reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled):
     return X_train_reduced, X_test_reduced, reduction
     
  # Affichage de la table de contingence
+@st.cache
 def display_crosstab(model, X_test_reduced, y_test):
     y_pred = model.predict(X_test_reduced)
     #crosstab = pd.crosstab(y_test, y_pred, colnames=['Prédiction'], rownames=['Realité'])
@@ -91,6 +94,7 @@ def display_crosstab(model, X_test_reduced, y_test):
     #Features importance
     return crosstab, report
 
+@st.cache
 def variance_graph(reduction):
     # Afficher la variance expliquée pour chaque composante grâce à l'attribut explained_variance_ de PCA.
     #st.write('Les valeurs propres sont :', reduction.explained_variance_)
@@ -102,7 +106,7 @@ def variance_graph(reduction):
     # Afficher le graphe dans Streamlit
     st.pyplot(fig)
     
-
+@st.cache
 def grid_search_params(best_model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test):
     grid_search = GridSearchCV(estimator=best_model, param_grid=param_grid, cv=5)
     grid_search.fit(X_train_reduced, y_train)
@@ -111,8 +115,11 @@ def grid_search_params(best_model, param_grid, X_train_reduced, X_test_reduced, 
     # Renvoie les prédictions et les meilleurs hyperparamètres
     return grid_search.best_params_, y_test, y_pred
 
-
+@st.cache
 def train_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
+    
+    X_train_reduced = reduce_sample(X_train_reduced)
+    y_train = reduce_y_train(y_train)
     model = 0
     
     if model_choisi == 'Régression logistique':
@@ -130,7 +137,11 @@ def train_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduce
     score = model.score(X_test_reduced, y_test)
     return score, model
 
+@st.cache
 def train_non_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
+    #On réduit les données pour alléger le calcul
+   #X_train_reduced = reduce_sample(X_train_reduced)
+   #y_train = reduce_y_train(y_train)
 
    if model_choisi == 'K-means':
       model = KMeans(n_clusters=3)  # Modifier le nombre de clusters selon vos besoins
@@ -160,7 +171,7 @@ def train_non_supervised_model(model_choisi, X_train_reduced, y_train, X_test_re
 
    return model, labels
 
-
+@st.cache
 def select_best_model(model_choisi, X_train_reduced, y_train):
     if model_choisi == 'Régression logistique':
         model = LogisticRegression()
@@ -210,6 +221,7 @@ def select_best_model(model_choisi, X_train_reduced, y_train):
 
     return best_model, best_params
 
+@st.cache
 def find_optimal_clusters(model, data, max_clusters):
     scores = []
     
@@ -233,6 +245,7 @@ def find_optimal_clusters(model, data, max_clusters):
     
     return scores
 
+@st.cache
 def plot_clusters(axes, labels):
     fig = plt.figure()
     ax = fig.add_subplot(111)
@@ -242,11 +255,10 @@ def plot_clusters(axes, labels):
     ax.set_title('Projection t-SNE avec couleurs de cluster')
     return fig
 
+@st.cache
 def search_clusters(methode_choisie, X_train_reduced):
     # On échantillonne les données pour limiter le calcul
-    sample_size = 500  # Taille de l'échantillon
-    indices = np.random.choice(len(X_train_reduced), size=sample_size, replace=False)
-    X_train_reduced_sample = X_train_reduced[indices]
+    X_train_reduced = reduce_sample(X_train_reduced)
 
     # Liste des nombres de clusters
     range_n_clusters = range(1, 21)
@@ -260,10 +272,10 @@ def search_clusters(methode_choisie, X_train_reduced):
     for n_clusters in range_n_clusters:
         if methode_choisie == "K-means":
             cluster = KMeans(n_clusters=n_clusters)
-            cluster.fit(X_train_reduced_sample)
+            cluster.fit(X_train_reduced)
             distorsions.append(
-                sum(np.min(cdist(X_train_reduced_sample, cluster.cluster_centers_, 'euclidean'), axis=1)) / np.size(
-                    X_train_reduced_sample, axis=0))
+                sum(np.min(cdist(X_train_reduced, cluster.cluster_centers_, 'euclidean'), axis=1)) / np.size(
+                    X_train_reduced, axis=0))
             axes.append(n_clusters)
 
         elif methode_choisie == "Clustering Hiérarchique":
@@ -281,14 +293,14 @@ def search_clusters(methode_choisie, X_train_reduced):
         elif methode_choisie == "Mean Shift":
             for bandwidth in bandwidths:
                 cluster = MeanShift(bandwidth=bandwidth)
-                labels = cluster.fit_predict(X_train_reduced_sample)
+                labels = cluster.fit_predict(X_train_reduced)
                 unique_labels = np.unique(labels)
                 centroids = []
                 for label in unique_labels:
-                    centroid = np.mean(X_train_reduced_sample[labels == label], axis=0)
+                    centroid = np.mean(X_train_reduced[labels == label], axis=0)
                     centroids.append(centroid)
-                distorsion = sum(np.min(cdist(X_train_reduced_sample, centroids, 'euclidean'), axis=1)) / np.size(
-                    X_train_reduced_sample, axis=0)
+                distorsion = sum(np.min(cdist(X_train_reduced, centroids, 'euclidean'), axis=1)) / np.size(
+                    X_train_reduced, axis=0)
                 distorsions.append(distorsion)
                 axes.append(bandwidth)
 
@@ -300,8 +312,24 @@ def search_clusters(methode_choisie, X_train_reduced):
     plt.title('Méthode du coude affichant le nombre de clusters optimal pour ' + methode_choisie)
     plt.grid(True)
     st.pyplot(fig)
-            
+
+@st.cache
+def reduce_sample(X_train_reduced):
+    # On échantillonne les données pour limiter le calcul
+    sample_size = 50  # Taille de l'échantillon
+    indices = np.random.choice(len(X_train_reduced), size=sample_size, replace=False)
+    X_train_reduced_sample = X_train_reduced[indices]
+    return X_train_reduced_sample
+
+@st.cache
+def reduce_y_train(y_train, sample_size=50):
+    indices = np.random.choice(len(y_train), size=sample_size, replace=False)
+    y_train_sample = y_train[indices]
+    return y_train_sample
+
+@st.cache        
 def display_clusters(methode_choisie, X_train_reduced):
+    X_train_reduced = reduce_sample(X_train_reduced)
     if methode_choisie == "K-means":
         model = KMeans(n_clusters=8)
         model.fit_predict(X_train_reduced)
