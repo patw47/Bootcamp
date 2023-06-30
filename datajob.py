@@ -218,7 +218,7 @@ elif page == pages[2]:
        st.write("Rapport de classification :")
        st.text(display_crosstab(best_model, X_test_reduced, y_test)[1])
 
-'''
+
 #elif page == pages[3]:
     
     st.subheader('Modélisation : Méthode non supervisée')
@@ -246,4 +246,4 @@ elif page == pages[2]:
         reset_button = False
         
     if search_clusters:     
-        display_clusters(methode_choisie, X_train_reduced) '''
+        display_clusters(methode_choisie, X_train_reduced) 
