@@ -186,7 +186,7 @@ elif page == pages[2]:
     #Affichage du score
     st.write("Score :", score)
 
-'''    
+ 
     #Affichage graphique variance expliquée
     #if reduction_choice == 'PCA':
         #variance_graph(reduction)
@@ -218,7 +218,7 @@ elif page == pages[2]:
        st.write("Rapport de classification :")
        st.text(display_crosstab(best_model, X_test_reduced, y_test)[1])
 
-
+'''
 #elif page == pages[3]:
     
     st.subheader('Modélisation : Méthode non supervisée')
