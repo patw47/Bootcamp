@@ -38,8 +38,8 @@ st.session_state.df = df
 
 pages = ['Exploration des données', 
          'Data Visualisation',
-         'Modélisation Supervisée'#,
-         #'Modélisation non supervisée'
+         'Modélisation Supervisée',
+         'Modélisation non supervisée'
          ]
 
 st.markdown("[Lien vers le rapport écrit ](https://docs.google.com/document/d/1DLS5DsbR-z5cnq5FYZIlrufrJUUiUxgFgHqk9vBGz2c/edit?usp=sharing')")
@@ -217,15 +217,23 @@ elif page == pages[2]:
 
        st.write("Rapport de classification :")
        st.text(display_crosstab(best_model, X_test_reduced, y_test)[1])
+       
+       st.session_state.X_train_scaled = X_train_scaled
+       st.session_state.X_test_scaled = X_test_scaled
+       st.session_state.y_train = y_train
+       st.session_state.y_train = y_test
 
 
-#elif page == pages[3]:
+elif page == pages[3]:
     
     st.subheader('Modélisation : Méthode non supervisée')
     
-    #df_new = st.session_state.df_new 
+    X_train_reduced = st.session_state['X_train_scaled']
+    X_test_reduced = st.session_state['X_test_scaled']
+    y_train = st.session_state['y_train']
+    y_test = st.session_state['y_test']
     
-    #X_train_reduced = st.session_state.X_train_reduced
+    X_train_reduced, X_test_reduced, reduction = reduction("PCA", X_train_scaled, y_train, X_test_scaled)
     
     #Selectbox avec Choix du modèle
     methode_choisie = st.selectbox(label = "Choix du modèle", 
@@ -265,5 +273,5 @@ elif page == pages[2]:
         ax.set_title('Visualisation des clusters ')
         st.pyplot(fig)  
         
-        st.write("Score :", silhouette_avg)
+        st.write("Score Silhouette :", silhouette_avg)
     
