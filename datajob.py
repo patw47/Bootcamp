@@ -110,7 +110,7 @@ elif page == pages[1]:
     fig = plt.figure()
     sns.countplot(x = "Q6", data = df_new)
     st.pyplot(fig)
-    
+ '''   
 elif page == pages[2]:
      
     st.subheader("Encodage des données en 4 étapes : ")
@@ -244,4 +244,4 @@ elif page == pages[2]:
         reset_button = False
         
     if search_clusters:     
-        display_clusters(methode_choisie, X_train_reduced) 
+        display_clusters(methode_choisie, X_train_reduced) '''
