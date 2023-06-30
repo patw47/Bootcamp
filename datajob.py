@@ -13,8 +13,6 @@ import streamlit as st
 from main_functions import nettoyage
 from modeling_functions import reduction, variance_graph, train_supervised_model, display_crosstab, select_best_model, train_non_supervised_model, search_clusters, display_clusters
 from sklearn.model_selection import train_test_split
-from sklearn.cluster import KMeans, AgglomerativeClustering, MeanShift
-from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import LabelEncoder
 import warnings
 
@@ -157,7 +155,7 @@ elif page == pages[2]:
     #Checkpoint
     st.write("Format de X_test après processing: ", X_test.shape)
     st.write("Format de X_train après processing: ", X_train.shape)
-   
+
     #Normalisation des données
     #scaler = StandardScaler() # Création de l'instance StandardScaler
     #X_train_scaled = scaler.fit_transform(X_train)
@@ -179,6 +177,29 @@ elif page == pages[2]:
     #Appel fonction réduction de données
     X_train_reduced, X_test_reduced, reduction = reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled)
     
+    #tracer le cercle des corrélations, qui nous permet d'évaluer
+    #l'influence de chaque variable pour chaque axe de représentation.
+    sqrt_eigval = np.sqrt(reduction.explained_variance_)
+    corvar = np.zeros((111, 111))
+    for k in range(111):
+        corvar[:, k] = reduction.components_[k, :] * sqrt_eigval[k]
+    # Delimitation de la figure
+    fig, axes = plt.subplots(figsize=(20, 20))
+    axes.set_xlim(-1, 1)
+    axes.set_ylim(-1, 1)
+    # Affichage des étiquettes (noms des variables)
+    for j in range(111):
+        plt.annotate(pd.DataFrame(X_train_reduced).columns[j], (corvar[j, 0], corvar[j, 1]), color='#091158')
+        plt.arrow(0, 0, corvar[j, 0]*0.9, corvar[j, 1]*0.9, alpha=0.5, head_width=0.03, color='b')
+    # Ajouter les axes
+    plt.plot([-1, 1], [0, 0], color='silver', linestyle='-', linewidth=1)
+    plt.plot([0, 0], [-1, 1], color='silver', linestyle='-', linewidth=1)
+    # Cercle et légendes
+    cercle = plt.Circle((0, 0), 1, color='#16E4CA', fill=False)
+    axes.add_artist(cercle)
+    plt.xlabel('AXE 1')
+    plt.ylabel('AXE 2')
+    st.pyplot(plt)
     
     #Selectbox avec Choix du modèle
     model_choisi = st.selectbox(label = "Choix du modèle", 
@@ -218,6 +239,8 @@ elif page == pages[2]:
        st.write("Rapport de classification :")
        st.text(display_crosstab(best_model, X_test_reduced, y_test)[1])
        
+       
+       
 elif page == pages[3]:
     
     st.subheader('Modélisation : Méthode non supervisée')
@@ -247,7 +270,7 @@ elif page == pages[3]:
     plt.title('Méthode du coude affichant le nombre de clusters optimal pour ' + methode_choisie)
     plt.grid(True)
     st.pyplot(fig)
-    
+       
     #Boutons d'affichage des clusters
     col1, col2 = st.columns(2)
     search_clusters = col1.button("Afficher les clusters", key="searchcluster")

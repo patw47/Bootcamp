@@ -12,7 +12,6 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.metrics import classification_report
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
@@ -26,7 +25,7 @@ import warnings
 # Ignorer les avertissements
 warnings.filterwarnings("ignore")
 
-@st.cache
+@st.cache_data
 def axes_figure(X_train_reduced, y_train, reduction_choice):
     '''
     Parameters
@@ -50,7 +49,7 @@ def axes_figure(X_train_reduced, y_train, reduction_choice):
     ax.set_title("Données projetées sur les 2 axes de " + reduction_choice)
     st.pyplot(fig)
 
-@st.cache
+#@st.cache_data
 def reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled):
     '''
     Choix de la méthode de réduction pour le modèle
@@ -83,9 +82,9 @@ def reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled):
     return X_train_reduced, X_test_reduced, reduction
     
  # Affichage de la table de contingence
-@st.cache
-def display_crosstab(model, X_test_reduced, y_test):
-    y_pred = model.predict(X_test_reduced)
+@st.cache_data
+def display_crosstab(_model, X_test_reduced, y_test):
+    y_pred = _model.predict(X_test_reduced)
     #crosstab = pd.crosstab(y_test, y_pred, colnames=['Prédiction'], rownames=['Realité'])
     crosstab = pd.crosstab(y_test, y_pred, rownames=['Réel'], colnames=['Prédiction'])
     # Ajouter un rapport de classification
@@ -94,7 +93,7 @@ def display_crosstab(model, X_test_reduced, y_test):
     #Features importance
     return crosstab, report
 
-@st.cache
+@st.cache_data
 def variance_graph(reduction):
     # Afficher la variance expliquée pour chaque composante grâce à l'attribut explained_variance_ de PCA.
     #st.write('Les valeurs propres sont :', reduction.explained_variance_)
@@ -106,7 +105,7 @@ def variance_graph(reduction):
     # Afficher le graphe dans Streamlit
     st.pyplot(fig)
     
-@st.cache
+@st.cache_data
 def grid_search_params(best_model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test):
     grid_search = GridSearchCV(estimator=best_model, param_grid=param_grid, cv=5)
     grid_search.fit(X_train_reduced, y_train)
@@ -116,9 +115,6 @@ def grid_search_params(best_model, param_grid, X_train_reduced, X_test_reduced, 
     return grid_search.best_params_, y_test, y_pred
 
 def train_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
-    
-    #X_train_reduced = reduce_sample(X_train_reduced)
-    #y_train = reduce_y_train(y_train)
     model = 0
     
     if model_choisi == 'Régression logistique':
@@ -136,12 +132,8 @@ def train_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduce
     score = model.score(X_test_reduced, y_test)
     return score, model
 
-@st.cache
+@st.cache_resource
 def train_non_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
-    #On réduit les données pour alléger le calcul
-   X_train_reduced = reduce_sample(X_train_reduced)
-   y_train = reduce_y_train(y_train)
-
    if model_choisi == 'K-means':
       model = KMeans(n_clusters=3)  # Modifier le nombre de clusters selon vos besoins
       labels = model.fit_predict(X_train_reduced)
@@ -150,23 +142,23 @@ def train_non_supervised_model(model_choisi, X_train_reduced, y_train, X_test_re
       model = AgglomerativeClustering(n_clusters=3)  # Modifier le nombre de clusters selon vos besoins
       labels = model.fit_predict(X_train_reduced)
       # Calcul de la matrice de dissimilarité
-      #linkage_matrix = linkage(X_train_reduced, method='complete', metric='euclidean')
+      linkage_matrix = linkage(X_train_reduced, method='complete', metric='euclidean')
 
        # Construction du dendrogramme
-      #fig = plt.figure()
-      #ax = fig.add_subplot(111)
-      #dendrogram(linkage_matrix)
-      #ax.set_title('Dendrogramme')
-      #ax.set_xlabel('Échantillons')
-      #ax.set_ylabel('Distance')
-      #st.pyplot(fig)
+      fig = plt.figure()
+      ax = fig.add_subplot(111)
+      dendrogram(linkage_matrix)
+      ax.set_title('Dendrogramme')
+      ax.set_xlabel('Échantillons')
+      ax.set_ylabel('Distance')
+      st.pyplot(fig)
 
    else:
       raise ValueError("Méthode non prise en charge")
 
    return model, labels
 
-@st.cache
+@st.cache_resource
 def select_best_model(model_choisi, X_train_reduced, y_train):
     if model_choisi == 'Régression logistique':
         model = LogisticRegression()
@@ -216,44 +208,8 @@ def select_best_model(model_choisi, X_train_reduced, y_train):
 
     return best_model, best_params
 
-'''def find_optimal_clusters(model, data, max_clusters):
-    scores = []
-    
-    for n_clusters in range(2, max_clusters+1, 2):
-        model.n_clusters = n_clusters
-        labels = model.fit_predict(data)
-        
-        # Calculer le score de silhouette
-        silhouette = silhouette_score(data, labels)   
-        scores.append((n_clusters, silhouette))
-    
-    # Afficher les scores
-    fig, ax = plt.subplots(figsize=(10, 8))
-    ax.plot([score[0] for score in scores], [score[1] for score in scores], marker='o')
-    ax.set_xlabel('Nombre de clusters')
-    ax.set_ylabel('Coefficient de silhouette')
-    ax.set_title('Coefficient de silhouette en fonction du nombre de clusters')
-    
-    plt.tight_layout()
-    plt.show()
-    
-    return scores'''
-
-@st.cache
-def plot_clusters(axes, labels):
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.scatter(axes[:, 0], axes[:, 1], c=labels, cmap=plt.cm.Spectral)
-    ax.set_xlabel('Axe 1')
-    ax.set_ylabel('Axe 2')
-    ax.set_title('Projection t-SNE avec couleurs de cluster')
-    return fig
-
-@st.cache
+@st.cache_resource
 def search_clusters(methode_choisie, X_train_reduced):
-    # On échantillonne les données pour limiter le calcul
-    #X_train_reduced = reduce_sample(X_train_reduced)
-
     # Liste des nombres de clusters
     range_n_clusters = range(1, 11)
 
@@ -285,26 +241,9 @@ def search_clusters(methode_choisie, X_train_reduced):
 
     return axes, distorsions
 
+@st.cache_resource       
+def display_clusters(methode_choisie, X_train_reduced):    
 
-@st.cache
-def reduce_sample(X_train_reduced):
-    # On échantillonne les données pour limiter le calcul
-    sample_size = 100  # Taille de l'échantillon
-    indices = np.random.choice(len(X_train_reduced), size=sample_size, replace=False)
-    X_train_reduced_sample = X_train_reduced[indices]
-    return X_train_reduced_sample
-
-@st.cache
-def reduce_y_train(y_train, sample_size=50):
-    indices = np.random.choice(len(y_train), size=sample_size, replace=False)
-    y_train_sample = y_train[indices]
-    return y_train_sample
-
-#@st.cache        
-def display_clusters(methode_choisie, X_train_reduced):
-    
-    #X_train_reduced = reduce_sample(X_train_reduced)
-    
     if methode_choisie == "K-means":
         model = KMeans(n_clusters=5)
         labels = model.fit_predict(X_train_reduced)
