@@ -139,8 +139,8 @@ def train_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduce
 @st.cache
 def train_non_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
     #On réduit les données pour alléger le calcul
-   #X_train_reduced = reduce_sample(X_train_reduced)
-   #y_train = reduce_y_train(y_train)
+   X_train_reduced = reduce_sample(X_train_reduced)
+   y_train = reduce_y_train(y_train)
 
    if model_choisi == 'K-means':
       model = KMeans(n_clusters=3)  # Modifier le nombre de clusters selon vos besoins
@@ -309,7 +309,7 @@ def search_clusters(methode_choisie, X_train_reduced):
 @st.cache
 def reduce_sample(X_train_reduced):
     # On échantillonne les données pour limiter le calcul
-    sample_size = 500  # Taille de l'échantillon
+    sample_size = 50  # Taille de l'échantillon
     indices = np.random.choice(len(X_train_reduced), size=sample_size, replace=False)
     X_train_reduced_sample = X_train_reduced[indices]
     return X_train_reduced_sample
