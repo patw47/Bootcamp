@@ -261,7 +261,7 @@ elif page == pages[3]:
         
         X_train_reduced, silhouette_avg, labels = display_clusters(methode_choisie, X_train_reduced) 
         
-        '''fig = plt.figure()
+        fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.scatter(X_train_reduced[:, 0], X_train_reduced[:, 1], c=labels, cmap=plt.cm.Spectral)
         ax.set_xlabel('Axe 1')
@@ -269,5 +269,5 @@ elif page == pages[3]:
         ax.set_title('Visualisation des clusters ')
         st.pyplot(fig)  
         
-        st.write("Score Silhouette :", silhouette_avg)'''
+        st.write("Score Silhouette :", silhouette_avg)
     

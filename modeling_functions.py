@@ -166,6 +166,7 @@ def train_non_supervised_model(model_choisi, X_train_reduced, y_train, X_test_re
 
    return model, labels
 
+@st.cache
 def select_best_model(model_choisi, X_train_reduced, y_train):
     if model_choisi == 'Régression logistique':
         model = LogisticRegression()
@@ -309,9 +310,6 @@ def display_clusters(methode_choisie, X_train_reduced):
         labels = model.fit_predict(X_train_reduced)
     elif methode_choisie == "Clustering Hiérarchique":
         model = AgglomerativeClustering(n_clusters=2)
-        labels = model.fit_predict(X_train_reduced)
-    elif methode_choisie == "Mean Shift":
-        model = MeanShift(bandwidth=1)
         labels = model.fit_predict(X_train_reduced)
     
     silhouette_avg = silhouette_score(X_train_reduced, labels)
