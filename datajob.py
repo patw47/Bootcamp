@@ -225,7 +225,7 @@ elif page == pages[2]:
     
     #df_new = st.session_state.df_new 
     
-    X_train_reduced = st.sesstion_state.X_train_reduced
+    #X_train_reduced = st.sesstion_state.X_train_reduced
     
     #Selectbox avec Choix du modèle
     methode_choisie = st.selectbox(label = "Choix du modèle", 
