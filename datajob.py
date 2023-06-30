@@ -166,6 +166,11 @@ elif page == pages[2]:
     X_train_scaled = X_train
     X_test_scaled = X_test
     
+    st.session_state.X_train_scaled = X_train_scaled
+    st.session_state.X_test_scaled = X_test_scaled
+    st.session_state.y_train = y_train
+    st.session_state.y_train = y_test
+    
     st.subheader('Modélisation : Méthode supervisée')
     
     #Selectbox Choix de la méthode de réduction
@@ -218,10 +223,7 @@ elif page == pages[2]:
        st.write("Rapport de classification :")
        st.text(display_crosstab(best_model, X_test_reduced, y_test)[1])
        
-       st.session_state.X_train_scaled = X_train_scaled
-       st.session_state.X_test_scaled = X_test_scaled
-       st.session_state.y_train = y_train
-       st.session_state.y_train = y_test
+       
 
 
 elif page == pages[3]:
