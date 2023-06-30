@@ -187,8 +187,6 @@ elif page == pages[2]:
     
     #Appel fonction d'entrainement du modèle
     score, model = train_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test)
-    #model = train_model(model_choisi)
-    
     #Affichage du score
     st.write("Score :", score)
 
@@ -198,10 +196,8 @@ elif page == pages[2]:
        
     st.markdown("**Recherche des meilleurs hyperparamètres :**")
     col1, col2 = st.columns(2)
-   
     # Bouton "Lancer l'optimisation" dans la première colonne
     search_param = col1.button("Lancer l'optimisation")
-
     # Bouton "Réinitialiser" dans la deuxième colonne
     reset_button = col2.button("Réinitialiser")
     
@@ -223,7 +219,7 @@ elif page == pages[2]:
        st.write("Rapport de classification :")
        st.text(display_crosstab(best_model, X_test_reduced, y_test)[1])
        
-elif page == pages[3]:
+'''elif page == pages[3]:
     
     st.subheader('Modélisation : Méthode non supervisée')
     
@@ -238,12 +234,13 @@ elif page == pages[3]:
     methode_choisie = st.selectbox(label = "Choix du modèle", 
                                 options = ['K-means', 'Clustering Hiérarchique'])    
     
-    #Appel fonction d'entrainement du modèle
+    #Appel fonction d'entrainement du modèle non supersivé
     model, labels = train_non_supervised_model(methode_choisie, X_train_reduced, y_train, X_test_reduced, y_test)   
-          
+    
+    #Recherche des clusters optimaux      
     axes, distorsions = search_clusters(methode_choisie, X_train_reduced)
 
-    # Création et affichage de la figure du graphique
+    # Graphique d'affichage des Clusters
     fig = plt.figure()
     plt.plot(axes, distorsions, 'gx-')
     plt.xlabel('Nombre de Clusters K')
@@ -273,5 +270,5 @@ elif page == pages[3]:
         ax.set_title('Visualisation des clusters ')
         st.pyplot(fig)  
         
-        st.write("Score Silhouette :", silhouette_avg)
+        st.write("Score Silhouette :", silhouette_avg)'''
     

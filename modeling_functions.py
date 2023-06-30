@@ -215,7 +215,7 @@ def select_best_model(model_choisi, X_train_reduced, y_train):
 
     return best_model, best_params
 
-def find_optimal_clusters(model, data, max_clusters):
+'''def find_optimal_clusters(model, data, max_clusters):
     scores = []
     
     for n_clusters in range(2, max_clusters+1, 2):
@@ -236,7 +236,7 @@ def find_optimal_clusters(model, data, max_clusters):
     plt.tight_layout()
     plt.show()
     
-    return scores
+    return scores'''
 
 @st.cache
 def plot_clusters(axes, labels):
