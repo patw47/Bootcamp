@@ -187,7 +187,6 @@ elif page == pages[2]:
     #Affichage du score
     st.write("Score :", score)
 
- 
     #Affichage graphique variance expliquée
     #if reduction_choice == 'PCA':
         #variance_graph(reduction)
@@ -256,7 +255,7 @@ elif page == pages[2]:
         reset_button = False
         
     if search_clusters:     
-        X_train_reduced = display_clusters(methode_choisie, X_train_reduced) 
+        X_train_reduced, silhouette_avg = display_clusters(methode_choisie, X_train_reduced) 
         
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -265,3 +264,6 @@ elif page == pages[2]:
         ax.set_ylabel('Axe 2')
         ax.set_title('Visualisation des clusters ')
         st.pyplot(fig)  
+        
+        st.write("Score :", silhouette_avg)
+    

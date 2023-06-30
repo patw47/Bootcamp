@@ -324,14 +324,17 @@ def reduce_y_train(y_train, sample_size=50):
 def display_clusters(methode_choisie, X_train_reduced):
     
     X_train_reduced = reduce_sample(X_train_reduced)
+    
     if methode_choisie == "K-means":
         model = KMeans(n_clusters=2)
-        model.fit_predict(X_train_reduced)
+        labels = model.fit_predict(X_train_reduced)
     elif methode_choisie == "Clustering Hiérarchique":
         model = AgglomerativeClustering(n_clusters=2)
-        model.fit_predict(X_train_reduced)
+        labels = model.fit_predict(X_train_reduced)
     elif methode_choisie == "Mean Shift":
         model = MeanShift(bandwidth=0.5)
-        model.fit_predict(X_train_reduced)
-        
-    return X_train_reduced
+        labels = model.fit_predict(X_train_reduced)
+    
+    silhouette_avg = silhouette_score(X_train_reduced, labels)
+    
+    return X_train_reduced, silhouette_avg
