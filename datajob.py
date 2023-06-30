@@ -157,8 +157,7 @@ elif page == pages[2]:
     #Checkpoint
     st.write("Format de X_test après processing: ", X_test.shape)
     st.write("Format de X_train après processing: ", X_train.shape)
-    #st.write("On constate que le train_test_split a laissé une colonne surnuméraire dans un des jeux")
-    
+   
     #Normalisation des données
     #scaler = StandardScaler() # Création de l'instance StandardScaler
     #X_train_scaled = scaler.fit_transform(X_train)
@@ -219,7 +218,7 @@ elif page == pages[2]:
        st.write("Rapport de classification :")
        st.text(display_crosstab(best_model, X_test_reduced, y_test)[1])
        
-'''elif page == pages[3]:
+elif page == pages[3]:
     
     st.subheader('Modélisation : Méthode non supervisée')
     
@@ -262,7 +261,7 @@ elif page == pages[2]:
         
         X_train_reduced, silhouette_avg, labels = display_clusters(methode_choisie, X_train_reduced) 
         
-        fig = plt.figure()
+        '''fig = plt.figure()
         ax = fig.add_subplot(111)
         ax.scatter(X_train_reduced[:, 0], X_train_reduced[:, 1], c=labels, cmap=plt.cm.Spectral)
         ax.set_xlabel('Axe 1')
