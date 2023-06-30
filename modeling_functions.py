@@ -320,7 +320,7 @@ def reduce_y_train(y_train, sample_size=50):
     y_train_sample = y_train[indices]
     return y_train_sample
 
-@st.cache        
+#@st.cache        
 def display_clusters(methode_choisie, X_train_reduced):
     
     #X_train_reduced = reduce_sample(X_train_reduced)
