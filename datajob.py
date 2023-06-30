@@ -112,8 +112,6 @@ elif page == pages[1]:
     st.pyplot(fig)
     
 
-
-'''
 elif page == pages[2]:
      
     st.subheader("Encodage des données en 4 étapes : ")
@@ -187,7 +185,8 @@ elif page == pages[2]:
     
     #Affichage du score
     st.write("Score :", score)
-    
+
+'''    
     #Affichage graphique variance expliquée
     #if reduction_choice == 'PCA':
         #variance_graph(reduction)
