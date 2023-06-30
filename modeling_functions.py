@@ -115,7 +115,6 @@ def grid_search_params(best_model, param_grid, X_train_reduced, X_test_reduced, 
     # Renvoie les prédictions et les meilleurs hyperparamètres
     return grid_search.best_params_, y_test, y_pred
 
-@st.cache
 def train_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
     
     #X_train_reduced = reduce_sample(X_train_reduced)
