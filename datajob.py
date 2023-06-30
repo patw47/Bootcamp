@@ -110,7 +110,10 @@ elif page == pages[1]:
     fig = plt.figure()
     sns.countplot(x = "Q6", data = df_new)
     st.pyplot(fig)
- '''   
+    
+
+
+'''
 elif page == pages[2]:
      
     st.subheader("Encodage des données en 4 étapes : ")
