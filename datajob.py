@@ -265,11 +265,11 @@ elif page == pages[3]:
         reset_button = False
         
     if search_clusters:     
-        X_train_reduced, silhouette_avg = display_clusters(methode_choisie, X_train_reduced) 
+        X_train_reduced, silhouette_avg, labels = display_clusters(methode_choisie, X_train_reduced) 
         
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.scatter(X_train_reduced[:, 0], X_train_reduced[:, 1], c=model.labels_, cmap=plt.cm.Spectral)
+        ax.scatter(X_train_reduced[:, 0], X_train_reduced[:, 1], c=labels, cmap=plt.cm.Spectral)
         ax.set_xlabel('Axe 1')
         ax.set_ylabel('Axe 2')
         ax.set_title('Visualisation des clusters ')

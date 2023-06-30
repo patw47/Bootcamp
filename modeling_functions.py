@@ -337,4 +337,4 @@ def display_clusters(methode_choisie, X_train_reduced):
     
     silhouette_avg = silhouette_score(X_train_reduced, labels)
     
-    return X_train_reduced, silhouette_avg
+    return X_train_reduced, silhouette_avg, labels
