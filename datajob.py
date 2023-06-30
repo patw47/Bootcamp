@@ -228,8 +228,8 @@ elif page == pages[3]:
     
     st.subheader('Modélisation : Méthode non supervisée')
     
-    X_train_reduced = st.session_state['X_train_scaled']
-    X_test_reduced = st.session_state['X_test_scaled']
+    X_train_scaled = st.session_state['X_train_scaled']
+    X_test_scaled = st.session_state['X_test_scaled']
     y_train = st.session_state['y_train']
     y_test = st.session_state['y_test']
     
