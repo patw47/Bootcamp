@@ -15,8 +15,8 @@ from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.metrics import classification_report
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
-from sklearn.cluster import KMeans, AgglomerativeClustering, MeanShift
-from sklearn.metrics import silhouette_score, davies_bouldin_score
+from sklearn.cluster import KMeans, AgglomerativeClustering
+from sklearn.metrics import silhouette_score
 from sklearn.model_selection import GridSearchCV
 from scipy.cluster.hierarchy import linkage, dendrogram
 from scipy.spatial.distance import cdist
@@ -28,6 +28,8 @@ warnings.filterwarnings("ignore")
 @st.cache_data
 def axes_figure(X_train_reduced, y_train, reduction_choice):
     '''
+    Fonction qui affiche les données projetées sur l'axe de réduction choisi
+    
     Parameters
     ----------
     X_train_reduced : array-like
@@ -51,27 +53,6 @@ def axes_figure(X_train_reduced, y_train, reduction_choice):
 
 #@st.cache_data
 def reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled):
-    '''
-    Choix de la méthode de réduction pour le modèle
-
-    Parameters
-    ----------
-    reduction_choice : str
-        The choice of reduction method ('PCA', 'LDA', 'MCA').
-    X_train : array-like or sparse matrix, shape (n_samples, n_features)
-        The training input samples.
-    y_train : array-like, shape (n_samples,)
-        The target values.
-    X_test : array-like or sparse matrix, shape (n_samples, n_features)
-        The testing input samples.
-
-    Returns
-    -------
-    X_train_reduced : array-like or sparse matrix, shape (n_samples, n_components)
-        The reduced feature set for the training data.
-        X_test_reduced : array-like or sparse matrix, shape (n_samples, n_components)
-        The reduced feature set for the testing data.
-    '''
     if reduction_choice == 'PCA':
         reduction = PCA()
     elif reduction_choice == 'LDA':
@@ -94,18 +75,6 @@ def display_crosstab(_model, X_test_reduced, y_test):
     return crosstab, report
 
 @st.cache_data
-def variance_graph(reduction):
-    # Afficher la variance expliquée pour chaque composante grâce à l'attribut explained_variance_ de PCA.
-    #st.write('Les valeurs propres sont :', reduction.explained_variance_)
-    fig = plt.figure()
-    # Tracer le graphe représentant la variance expliquée en fonction du nombre de composantes.
-    plt.plot(np.arange(1, 112), reduction.explained_variance_)
-    plt.xlabel('Nombre de facteurs')
-    plt.ylabel('Valeurs propres')
-    # Afficher le graphe dans Streamlit
-    st.pyplot(fig)
-    
-@st.cache_data
 def grid_search_params(best_model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test):
     grid_search = GridSearchCV(estimator=best_model, param_grid=param_grid, cv=5)
     grid_search.fit(X_train_reduced, y_train)
@@ -114,6 +83,7 @@ def grid_search_params(best_model, param_grid, X_train_reduced, X_test_reduced, 
     # Renvoie les prédictions et les meilleurs hyperparamètres
     return grid_search.best_params_, y_test, y_pred
 
+@st.cache_resource
 def train_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
     model = 0
     
@@ -141,17 +111,6 @@ def train_non_supervised_model(model_choisi, X_train_reduced, y_train, X_test_re
    elif model_choisi == 'Clustering Hiérarchique':
       model = AgglomerativeClustering(n_clusters=3)  # Modifier le nombre de clusters selon vos besoins
       labels = model.fit_predict(X_train_reduced)
-      # Calcul de la matrice de dissimilarité
-      linkage_matrix = linkage(X_train_reduced, method='complete', metric='euclidean')
-
-       # Construction du dendrogramme
-      fig = plt.figure()
-      ax = fig.add_subplot(111)
-      dendrogram(linkage_matrix)
-      ax.set_title('Dendrogramme')
-      ax.set_xlabel('Échantillons')
-      ax.set_ylabel('Distance')
-      st.pyplot(fig)
 
    else:
       raise ValueError("Méthode non prise en charge")
@@ -248,7 +207,7 @@ def display_clusters(methode_choisie, X_train_reduced):
         model = KMeans(n_clusters=2)
         labels = model.fit_predict(X_train_reduced)
     elif methode_choisie == "Clustering Hiérarchique":
-        model = AgglomerativeClustering(n_clusters=2)
+        model = AgglomerativeClustering(n_clusters=3)
         labels = model.fit_predict(X_train_reduced)
     
     silhouette_avg = silhouette_score(X_train_reduced, labels)

@@ -10,27 +10,14 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import streamlit as st
-from main_functions import nettoyage
-from modeling_functions import reduction, variance_graph, train_supervised_model, display_crosstab, select_best_model, train_non_supervised_model, search_clusters, display_clusters
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
+from main_functions import nettoyage, processing
+from modeling_functions import reduction, train_supervised_model, display_crosstab, select_best_model, train_non_supervised_model, search_clusters, display_clusters
 import warnings
 
 # Ignorer les avertissements
 warnings.filterwarnings("ignore")
 
 st.title('Projet DataJob')
-
-# Initialisation des données dans st.session_state
-#if 'df' not in st.session_state:
-   # st.session_state.df = None
-
-#if 'df_new' not in st.session_state:
-    #st.session_state.df_new = None
-
-# Chargement des données si elles n'ont pas déjà été chargées
-#if st.session_state.df is None:
-#st.session_state.df = pd.read_csv('kaggle_survey_2020_responses.csv')
 df = pd.read_csv('kaggle_survey_2020_responses.csv')
 st.session_state.df = df
 
@@ -60,29 +47,27 @@ if page == pages[0]:
         
         st.markdown("---")
 
-    st.subheader("Préparation des données en 9 étapes : ")
-    st.write("1.Suppression première ligne")
+    st.subheader("Préparation des données en 7 étapes : ")
+    st.write("1.Suppression première ligne inutile")
     st.write("2.Supression lignes dont la valeur duration est inf à 2 min")
     st.write("3.Supression des lignes où la réponse à Q6 est I have never written Code")
-    st.write("4.Supression des colonnes avec questions Projection dans deux ans")
+    st.write("4.Supression des colonnes avec questions sur le thème Projection dans deux ans")
     st.write("5.Regroupement par famille de métiers")
-    st.write("6.Supression de colonnes peu pertinentes avec bcp de valeurs manquantes (Q11, Q13, Q15, Q20, Q21, Q22, Q24, Q25")
-    st.write("7.Supression des colonnes avec taux de réponse inférieur à 50%")
-    st.write("8.Remplacement des valeurs par 0 ou 1 pour les colonnes contenant des réponses binaires")
-    st.write("9.Remplacement des dernières valeurs vides par leur moyenne")
+    st.write("6.Remplacement des valeurs par 0 ou 1 pour les colonnes contenant des réponses binaires")
+    st.write("7.Remplacement des dernières valeurs catégorielles vides par leur mode")
+    
+    #Appel fonction nettoyage des données
+    df_new = nettoyage(df, remove = False)
     
     #Récupération var df_new dans la session
-    df_new = nettoyage(df)
     st.session_state.df_new = df_new
-    
+  
     st.markdown("---")
-    #Check des valeurs de Q5 filtrées
     
+    #Check des valeurs de Q5 filtrées    
     col1, col2 = st.columns(2)
-
     col1.write("Variables cibles avant regroupement et nettoyage")
     col1.write(df['Q5'].value_counts())
-
     col2.write("Variables cibles après regroupement")
     col2.write(df_new['Q5'].value_counts())
     
@@ -122,51 +107,18 @@ elif page == pages[2]:
     #Récupération var df_new dans la session
     df_new = st.session_state.df_new
     
-    #Séparation et Encodage variable cible
-    label_encoder = LabelEncoder()
-    target = label_encoder.fit_transform(df_new['Q5'])
-
-    #Séparation des Variables explicatives
-    feats = df_new.drop('Q5', axis = 1)
-    
-    X_train, X_test, y_train, y_test = train_test_split(feats, target , test_size=0.21, random_state=42)
-
-    #On isole les variables cat des deux jeux
-    df_cat_train = X_train.select_dtypes(include='object')
-    df_cat_test = X_test.select_dtypes(include='object')
-
-    #Je vire les variables catégorielles des jeux pour les traiter
-    df_new_train = X_train.drop(df_cat_train.columns, axis=1)
-    df_new_test = X_test.drop(df_cat_train.columns, axis=1)
-
-    #Encodage des variables catégorielles
-    df_encoded_train = pd.get_dummies(df_cat_train)
-    df_encoded_test = pd.get_dummies(df_cat_test)
-
-    #On fusionne les df après reset des index
-    df_new_train = df_new_train.reset_index(drop=True)
-    df_encoded_train = df_encoded_train.reset_index(drop=True)
-    X_train = pd.concat([df_encoded_train, df_new_train], axis=1)
-
-    df_new_test = df_new_test.reset_index(drop=True)
-    df_encoded_test = df_encoded_test.reset_index(drop=True)
-    X_test = pd.concat([df_encoded_test, df_new_test], axis=1)
+    #Appel fonction processing des données
+    X_test, X_train, y_test, y_train = processing(df_new)
     
     #Checkpoint
     st.write("Format de X_test après processing: ", X_test.shape)
     st.write("Format de X_train après processing: ", X_train.shape)
-
-    #Normalisation des données
-    #scaler = StandardScaler() # Création de l'instance StandardScaler
-    #X_train_scaled = scaler.fit_transform(X_train)
-    #X_test_scaled = scaler.transform(X_test)
-    X_train_scaled = X_train
-    X_test_scaled = X_test
     
-    st.session_state.X_train_scaled = X_train_scaled
-    st.session_state.X_test_scaled = X_test_scaled
+    #Stockage des variables pour récupération
     st.session_state.y_train = y_train
     st.session_state.y_test = y_test
+    st.session_state.X_train = X_train
+    st.session_state.X_test = X_test
     
     st.subheader('Modélisation : Méthode supervisée')
     
@@ -175,31 +127,35 @@ elif page == pages[2]:
                                 options = ['PCA', 'LDA'])    
     
     #Appel fonction réduction de données
-    X_train_reduced, X_test_reduced, reduction = reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled)
+    X_train_reduced, X_test_reduced, reduction = reduction(reduction_choice, X_train, y_train, X_test)
     
-    #tracer le cercle des corrélations, qui nous permet d'évaluer
-    #l'influence de chaque variable pour chaque axe de représentation.
-    sqrt_eigval = np.sqrt(reduction.explained_variance_)
-    corvar = np.zeros((111, 111))
-    for k in range(111):
-        corvar[:, k] = reduction.components_[k, :] * sqrt_eigval[k]
-    # Delimitation de la figure
-    fig, axes = plt.subplots(figsize=(20, 20))
-    axes.set_xlim(-1, 1)
-    axes.set_ylim(-1, 1)
-    # Affichage des étiquettes (noms des variables)
-    for j in range(111):
-        plt.annotate(pd.DataFrame(X_train_reduced).columns[j], (corvar[j, 0], corvar[j, 1]), color='#091158')
-        plt.arrow(0, 0, corvar[j, 0]*0.9, corvar[j, 1]*0.9, alpha=0.5, head_width=0.03, color='b')
-    # Ajouter les axes
-    plt.plot([-1, 1], [0, 0], color='silver', linestyle='-', linewidth=1)
-    plt.plot([0, 0], [-1, 1], color='silver', linestyle='-', linewidth=1)
+    if reduction_choice =="PCA":
+        #tracer le cercle des corrélations, qui nous permet d'évaluer
+        #l'influence de chaque variable pour chaque axe de représentation.
+        sqrt_eigval = np.sqrt(reduction.explained_variance_)
+        #corvar = np.zeros((111, 111))
+        corvar = np.zeros((357, 357))
+        #for k in range(111):
+        for k in range(357):
+            corvar[:, k] = reduction.components_[k, :] * sqrt_eigval[k]
+                # Delimitation de la figure
+            fig, axes = plt.subplots(figsize=(20, 20))
+            axes.set_xlim(-1, 1)
+            axes.set_ylim(-1, 1)
+                # Affichage des étiquettes (noms des variables)
+        for j in range(357):
+                    #for j in range(111)
+                plt.annotate(pd.DataFrame(X_train_reduced).columns[j], (corvar[j, 0], corvar[j, 1]), color='#091158')
+                plt.arrow(0, 0, corvar[j, 0]*0.9, corvar[j, 1]*0.9, alpha=0.5, head_width=0.03, color='b')
+            # Ajouter les axes
+        plt.plot([-1, 1], [0, 0], color='silver', linestyle='-', linewidth=1)
+        plt.plot([0, 0], [-1, 1], color='silver', linestyle='-', linewidth=1)
     # Cercle et légendes
-    cercle = plt.Circle((0, 0), 1, color='#16E4CA', fill=False)
-    axes.add_artist(cercle)
-    plt.xlabel('AXE 1')
-    plt.ylabel('AXE 2')
-    st.pyplot(plt)
+        cercle = plt.Circle((0, 0), 1, color='#16E4CA', fill=False)
+        axes.add_artist(cercle)
+        plt.xlabel('AXE 1')
+        plt.ylabel('AXE 2')
+        st.pyplot(plt)
     
     #Selectbox avec Choix du modèle
     model_choisi = st.selectbox(label = "Choix du modèle", 
@@ -210,10 +166,6 @@ elif page == pages[2]:
     #Affichage du score
     st.write("Score :", score)
 
-    #Affichage graphique variance expliquée
-    #if reduction_choice == 'PCA':
-        #variance_graph(reduction)
-       
     st.markdown("**Recherche des meilleurs hyperparamètres :**")
     col1, col2 = st.columns(2)
     # Bouton "Lancer l'optimisation" dans la première colonne
@@ -245,12 +197,15 @@ elif page == pages[3]:
     
     st.subheader('Modélisation : Méthode non supervisée')
     
-    X_train_scaled = st.session_state['X_train_scaled']
-    X_test_scaled = st.session_state['X_test_scaled']
+    #Récupération des variables
+    X_train = st.session_state['X_train']
+    X_test = st.session_state['X_test']
     y_train = st.session_state['y_train']
     y_test = st.session_state['y_test']
     
-    X_train_reduced, X_test_reduced, reduction = reduction("PCA", X_train_scaled, y_train, X_test_scaled)
+    #Pour la modélisation non supervisée non choisissons après différents tests d'opter d'office pour PCA pour des 
+    #raisons de performances du code
+    X_train_reduced, X_test_reduced, reduction = reduction("PCA", X_train, y_train, X_test)
     
     #Selectbox avec Choix du modèle
     methode_choisie = st.selectbox(label = "Choix du modèle", 
@@ -281,10 +236,11 @@ elif page == pages[3]:
         reset_button = False
         
     if search_clusters: 
-        
+        #Appel fonction d'affichage des clusters et score silhouette
         X_train_reduced, silhouette_avg, labels = display_clusters(methode_choisie, X_train_reduced) 
         
         fig = plt.figure()
+        #ax = fig.add_subplot(111)
         ax = fig.add_subplot(111)
         ax.scatter(X_train_reduced[:, 0], X_train_reduced[:, 1], c=labels, cmap=plt.cm.Spectral)
         ax.set_xlabel('Axe 1')
