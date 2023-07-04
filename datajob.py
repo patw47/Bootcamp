@@ -134,15 +134,15 @@ elif page == pages[2]:
         #Cercle des corrélations, qui nous permet d'évaluer
         #l'influence de chaque variable pour chaque axe de représentation.
         sqrt_eigval = np.sqrt(reduction.explained_variance_)
-        corvar = np.zeros((357, 357))
-        for k in range(357):
+        corvar = np.zeros((356, 356))
+        for k in range(356):
             corvar[:, k] = reduction.components_[k, :] * sqrt_eigval[k]
                 # Delimitation de la figure
             fig, axes = plt.subplots(figsize=(20, 20))
             axes.set_xlim(-1, 1)
             axes.set_ylim(-1, 1)
                 # Affichage des étiquettes (noms des variables)
-        for j in range(357):
+        for j in range(356):
                 plt.annotate(pd.DataFrame(X_train_reduced).columns[j], (corvar[j, 0], corvar[j, 1]), color='#091158')
                 plt.arrow(0, 0, corvar[j, 0]*0.9, corvar[j, 1]*0.9, alpha=0.5, head_width=0.03, color='b')
             # Ajouter les axes
