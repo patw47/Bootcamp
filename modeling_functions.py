@@ -6,7 +6,6 @@ Created on Fri Jun 23 17:44:35 2023
 """
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 import streamlit as st
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
@@ -18,7 +17,7 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.metrics import silhouette_score
 from sklearn.model_selection import GridSearchCV
-from scipy.cluster.hierarchy import linkage, dendrogram
+#from scipy.cluster.hierarchy import linkage, dendrogram
 from scipy.spatial.distance import cdist
 import warnings
 
@@ -26,33 +25,24 @@ import warnings
 warnings.filterwarnings("ignore")
 
 @st.cache_data
-def axes_figure(X_train_reduced, y_train, reduction_choice):
+def reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled):
     '''
-    Fonction qui affiche les données projetées sur l'axe de réduction choisi
-    
+    Réduit la dimensionnalité des données en utilisant une méthode de réduction spécifiée.
+
     Parameters
     ----------
-    X_train_reduced : array-like
-        Données réduites.
-    y_train : array-like
-        Étiquettes des données.
-    reduction_choice : str
-        Méthode de réduction utilisée.
+    reduction_choice (str): Le choix de la méthode de réduction. 'PCA' pour l'analyse en composantes principales (PCA) ou 'LDA' pour l'analyse discriminante linéaire (LDA).
+    X_train_scaled (numpy.array): Les données d'entraînement mises à l'échelle.
+    y_train (numpy.array): Les valeurs cibles d'entraînement.
+    X_test_scaled (numpy.array): Les données de test mises à l'échelle.
 
     Returns
     -------
-    None
+    tuple: Un tuple contenant les données réduites d'entraînement et de test, ainsi que l'objet de réduction.
+            - X_train_reduced (numpy.array): Les données d'entraînement réduites.
+            - X_test_reduced (numpy.array): Les données de test réduites.
+            - reduction (object): L'objet de réduction (PCA ou LDA) qui a été ajusté sur les données d'entraînement.
     '''
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    ax.scatter(X_train_reduced[:, 0], X_train_reduced[:, 1], c=y_train, cmap=plt.cm.Spectral)
-    ax.set_xlabel('Axe 1')
-    ax.set_ylabel('Axe 2')
-    ax.set_title("Données projetées sur les 2 axes de " + reduction_choice)
-    st.pyplot(fig)
-
-#@st.cache_data
-def reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled):
     if reduction_choice == 'PCA':
         reduction = PCA()
     elif reduction_choice == 'LDA':
@@ -61,30 +51,76 @@ def reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled):
     X_train_reduced = reduction.fit_transform(X_train_scaled, y_train)
     X_test_reduced = reduction.transform(X_test_scaled)
     return X_train_reduced, X_test_reduced, reduction
-    
- # Affichage de la table de contingence
+
 @st.cache_data
 def display_crosstab(_model, X_test_reduced, y_test):
-    y_pred = _model.predict(X_test_reduced)
-    #crosstab = pd.crosstab(y_test, y_pred, colnames=['Prédiction'], rownames=['Realité'])
-    crosstab = pd.crosstab(y_test, y_pred, rownames=['Réel'], colnames=['Prédiction'])
-    # Ajouter un rapport de classification
-    report = classification_report(y_test, y_pred)
+    '''
+    Affiche la table de contingence et le rapport de classification pour les prédictions d'un modèle donné.
 
-    #Features importance
+    Parameters
+    ----------
+    _model (object): L'objet de modèle utilisé pour faire les prédictions.
+    X_test_reduced (numpy.array): Les données de test réduites.
+    y_test (numpy.array): Les valeurs cibles réelles correspondant aux données de test.
+
+    Returns
+    -------
+    tuple: Un tuple contenant la table de contingence et le rapport de classification.
+            - crosstab (pandas.DataFrame): La table de contingence des prédictions par rapport aux valeurs réelles.
+            - report (str): Le rapport de classification des prédictions.
+    '''
+    
+    y_pred = _model.predict(X_test_reduced)
+    crosstab = pd.crosstab(y_test, y_pred, rownames=['Réel'], colnames=['Prédiction'])
+    report = classification_report(y_test, y_pred)
     return crosstab, report
 
 @st.cache_data
 def grid_search_params(best_model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test):
+    '''
+    Effectue une recherche de grille pour trouver les meilleurs hyperparamètres d'un modèle donné.
+
+    Parameters
+    ----------
+    best_model (object): L'objet du meilleur modèle à utiliser.
+    param_grid (dict): Le dictionnaire des paramètres à tester dans la recherche de grille.
+    X_train_reduced (numpy.array): Les données d'entraînement réduites.
+    X_test_reduced (numpy.arraye): Les données de test réduites.
+    y_train (numpy.array): Les valeurs cibles d'entraînement.
+    y_test (numpy.array): Les valeurs cibles de test.
+
+    Returns
+    -------
+    tuple: Un tuple contenant les meilleurs paramètres trouvés, les valeurs cibles réelles et les prédictions.
+            - best_params (dict): Les meilleurs paramètres trouvés par la recherche de grille.
+            - y_test (numpy.array or pandas.Series): Les valeurs cibles réelles correspondant aux données de test.
+            - y_pred (numpy.array or pandas.Series): Les prédictions faites par le meilleur modèle.
+    '''
     grid_search = GridSearchCV(estimator=best_model, param_grid=param_grid, cv=5)
     grid_search.fit(X_train_reduced, y_train)
-    # Évaluation du  modèle sur les données de test
     y_pred = best_model.predict(X_test_reduced)
-    # Renvoie les prédictions et les meilleurs hyperparamètres
     return grid_search.best_params_, y_test, y_pred
 
 @st.cache_resource
 def train_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
+    '''
+    Entraîne un modèle supervisé choisi sur les données d'entraînement réduites et évalue sa performance sur les données de test.
+
+    Parameters
+    ----------
+    model_choisi (str): Le choix du modèle à entraîner.
+    X_train_reduced (numpy.array): Les données d'entraînement réduites.
+    y_train (numpy.array): Les valeurs cibles d'entraînement.
+    X_test_reduced (numpy.array): Les données de test réduites.
+    y_test (numpy.array): Les valeurs cibles de test.
+
+    Returns
+    -------
+    tuple: Un tuple contenant le score de performance du modèle sur les données de test et le modèle entraîné.
+            - score (float): Le score de performance du modèle sur les données de test.
+            - model (object): L'objet du modèle supervisé entraîné.
+
+    '''
     model = 0
     
     if model_choisi == 'Régression logistique':
@@ -104,21 +140,62 @@ def train_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduce
 
 @st.cache_resource
 def train_non_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
-   if model_choisi == 'K-means':
+    '''
+    Entraîne un modèle non supervisé choisi sur les données d'entraînement réduites et retourne le modèle entraîné ainsi que les labels prédits.
+
+    Parameters
+    ----------
+    model_choisi (str): Le choix du modèle non supervisé à entraîner.
+    X_train_reduced (numpy.array): Les données d'entraînement réduites.
+    y_train (numpy.array): Les valeurs cibles d'entraînement.
+    X_test_reduced (numpy.array): Les données de test réduites.
+    y_test (numpy.array): Les valeurs cibles de test.
+
+    Raises
+    ------
+    ValueError: Si la méthode choisie n'est pas prise en charge.
+
+    Returns
+    -------
+    tuple: Un tuple contenant le modèle entraîné et les labels prédits sur les données d'entraînement.
+            - model (object): L'objet du modèle non supervisé entraîné.
+            - labels (numpy.array): Les labels prédits par le modèle sur les données d'entraînement.
+    '''
+    if model_choisi == 'K-means':
       model = KMeans(n_clusters=3)  # Modifier le nombre de clusters selon vos besoins
       labels = model.fit_predict(X_train_reduced)
       
-   elif model_choisi == 'Clustering Hiérarchique':
+    elif model_choisi == 'Clustering Hiérarchique':
       model = AgglomerativeClustering(n_clusters=3)  # Modifier le nombre de clusters selon vos besoins
       labels = model.fit_predict(X_train_reduced)
 
-   else:
+    else:
       raise ValueError("Méthode non prise en charge")
 
-   return model, labels
+    return model, labels
 
 @st.cache_resource
-def select_best_model(model_choisi, X_train_reduced, y_train):
+def select_best_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test):
+    '''
+    Sélectionne le meilleur modèle pour un choix donné
+
+    Parameters
+    ----------
+    model_choisi (str): Choix du modèle ('Régression logistique', 'KNN', 'Forêt aléatoire', 'Arbre de décision' ou 'Boosting').
+    X_train_reduced (array-like): Données d'entraînement réduites.
+    y_train (array-like): Cible des données d'entraînement.
+    X_test_reduced (array-like): Données de test réduites.
+    y_test (array-like): Cible des données de test.
+
+    Raises
+    ------
+    ValueError: Si le modèle choisi n'est pas pris en charge.
+
+    Returns
+    -------
+    tuple: Tuple contenant le meilleur modèle sélectionné, les meilleurs paramètres, le modèle initial et le score.
+
+    '''
     if model_choisi == 'Régression logistique':
         model = LogisticRegression()
         param_grid = {
@@ -164,19 +241,31 @@ def select_best_model(model_choisi, X_train_reduced, y_train):
     # Obtenir le meilleur modèle avec les meilleurs paramètres
     best_model = grid_search.best_estimator_
     best_params = grid_search.best_params_
+    
+    score = best_model.score(X_test_reduced, y_test)
 
-    return best_model, best_params
+    return best_model, best_params, model, score
 
 @st.cache_resource
 def search_clusters(methode_choisie, X_train_reduced):
-    # Liste des nombres de clusters
-    range_n_clusters = range(1, 11)
+    '''
+    methode_choisie (str): Le choix de la méthode de clustering. "K-means" pour la méthode des K-moyennes ou "Clustering Hiérarchique" pour le clustering hiérarchique.
 
-    # Initialisation des listes de distorsions et d'axes
+    Parameters
+    ----------
+    methode_choisie (str): Le choix de la méthode de clustering. 
+    X_train_reduced (numpy.array): Les données d'entraînement réduites..
+
+    Returns
+    -------
+    tuple: Un tuple contenant les axes (nombre de clusters) et les distorsions correspondantes.
+            - axes (list): La liste des nombres de clusters testés.
+            - distorsions (list): La liste des distorsions pour chaque nombre de clusters.
+    '''
+    range_n_clusters = range(1, 11)
     distorsions = []
     axes = []
 
-    # Calcul des distorsions pour les différents modèles
     for n_clusters in range_n_clusters:
         if methode_choisie == "K-means":
             cluster = KMeans(n_clusters=n_clusters)
@@ -201,13 +290,27 @@ def search_clusters(methode_choisie, X_train_reduced):
     return axes, distorsions
 
 @st.cache_resource       
-def display_clusters(methode_choisie, X_train_reduced):    
+def display_clusters(methode_choisie, X_train_reduced):
+    '''
+    Affiche les clusters obtenus avec la méthode choisie et renvoie les données réduites, la silhouette moyenne et les labels des clusters.
+    Parameters
+    ----------
+    methode_choisie : str
+        Méthode de clustering choisie ('K-means' ou 'Clustering Hiérarchique').
+    X_train_reduced : array-like
+        Données réduites d'entraînement.
+
+    Returns
+    -------
+    tuple
+        Tuple contenant les données réduites, la silhouette moyenne et les labels des clusters.
+    '''    
 
     if methode_choisie == "K-means":
-        model = KMeans(n_clusters=2)
+        model = KMeans(n_clusters=4)
         labels = model.fit_predict(X_train_reduced)
     elif methode_choisie == "Clustering Hiérarchique":
-        model = AgglomerativeClustering(n_clusters=3)
+        model = AgglomerativeClustering(n_clusters=4)
         labels = model.fit_predict(X_train_reduced)
     
     silhouette_avg = silhouette_score(X_train_reduced, labels)

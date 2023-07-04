@@ -80,24 +80,25 @@ def nettoyage(df, remove):
 
     if remove == True:
         #On vire les colonnes avec taux de réponse inf à 90%
-        cols = colonnes_incompletes(df_new, 0.25)
+        cols = colonnes_incompletes(df_new, 0.9)
         df_new = df_new.drop(cols, axis=1)
     
     #Conversion des valeurs vides des colonnes contenant les sous questions (identifiées par "_" en 0 et des valeurs existantes en 1)
     for column in df_new.columns:
         if "_" in column:
             df_new[column] = np.where(df_new[column].fillna('') != '', 1, 0)
-        
+      
     #Remplacement des dernières valeurs vides catégorielles par leur mode
     df_new['Q6'].fillna(df_new['Q6'].mode().iloc[0], inplace=True)
     df_new['Q8'].fillna(df_new['Q8'].mode().iloc[0], inplace=True)
-    df_new['Q38'].fillna(df_new['Q38'].mode().iloc[0], inplace=True) 
-    df_new['Q30'].fillna(df_new['Q30'].mode().iloc[0], inplace=True)
-    #df_new['Q32'].fillna(df_new['Q32'].mode().iloc[0], inplace=True)
-
-    #On supprime la colonne Q32
-    df_new = df_new.drop("Q32", axis=1)
     
+   #Colonnes à traiter en plus si on garde toutes les données
+    if remove == False:
+        df_new['Q38'].fillna(df_new['Q38'].mode().iloc[0], inplace=True) 
+        df_new['Q30'].fillna(df_new['Q30'].mode().iloc[0], inplace=True)
+        #On supprime la colonne Q32 peu pertinente qui rend les jeu de test impair
+        df_new = df_new.drop("Q32", axis=1)
+
     #Stockage df_new dans la var de session
     st.session_state.df_new = df_new
     
@@ -145,7 +146,7 @@ def processing(df):
     #Encodage des variables catégorielles
     df_encoded_train = pd.get_dummies(df_cat_train)
     df_encoded_test = pd.get_dummies(df_cat_test)
-    
+
     #On fusionne les df après reset des index
     df_new_train = df_new_train.reset_index(drop=True)
     df_encoded_train = df_encoded_train.reset_index(drop=True)

@@ -47,14 +47,15 @@ if page == pages[0]:
         
         st.markdown("---")
 
-    st.subheader("Préparation des données en 7 étapes : ")
+    st.subheader("Préparation des données en 8 étapes : ")
     st.write("1.Suppression première ligne inutile")
     st.write("2.Supression lignes dont la valeur duration est inf à 2 min")
     st.write("3.Supression des lignes où la réponse à Q6 est I have never written Code")
     st.write("4.Supression des colonnes avec questions sur le thème Projection dans deux ans")
     st.write("5.Regroupement par famille de métiers")
-    st.write("6.Remplacement des valeurs par 0 ou 1 pour les colonnes contenant des réponses binaires")
-    st.write("7.Remplacement des dernières valeurs catégorielles vides par leur mode")
+    st.write("6.Supression de quelques colonnes peu pertinentes")
+    st.write("7.Remplacement des valeurs par 0 ou 1 pour les colonnes contenant des réponses binaires")
+    st.write("8.Remplacement des dernières valeurs catégorielles vides par leur mode")
     
     #Appel fonction nettoyage des données
     df_new = nettoyage(df, remove = False)
@@ -104,16 +105,15 @@ elif page == pages[2]:
     st.write("3.Encodage des variables catégorielles avec Getdummies")
     st.write("4.Réduction au choix avec PCA ou LDA")
     
-    #Récupération var df_new dans la session
-    df_new = st.session_state.df_new
+    df_new = nettoyage(df, remove = False)
     
-    #Appel fonction processing des données
+    #Appel fonction processing et séparation des données
     X_test, X_train, y_test, y_train = processing(df_new)
     
     #Checkpoint
     st.write("Format de X_test après processing: ", X_test.shape)
     st.write("Format de X_train après processing: ", X_train.shape)
-    
+  
     #Stockage des variables pour récupération
     st.session_state.y_train = y_train
     st.session_state.y_test = y_test
@@ -130,7 +130,7 @@ elif page == pages[2]:
     X_train_reduced, X_test_reduced, reduction = reduction(reduction_choice, X_train, y_train, X_test)
     
     if reduction_choice =="PCA":
-        #tracer le cercle des corrélations, qui nous permet d'évaluer
+        #Cercle des corrélations, qui nous permet d'évaluer
         #l'influence de chaque variable pour chaque axe de représentation.
         sqrt_eigval = np.sqrt(reduction.explained_variance_)
         #corvar = np.zeros((111, 111))
@@ -179,17 +179,21 @@ elif page == pages[2]:
         
     if search_param:
        
-       best_model, best_params = select_best_model(model_choisi, X_train_reduced, y_train)
+       best_model, best_params, model, score = select_best_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test)
        
        st.write("Les meilleurs hyperparamètres sont :", best_params)
-       score = best_model.score(X_test_reduced, y_test)
+
        st.write("Score après optimisation des hyperparamètres : ", score)
        
+       st.write("Le meilleur modèle serait :", best_model)
+       
        st.write("Comparaison prédictions vs réalité :")
-       st.write(display_crosstab(best_model, X_test_reduced, y_test)[0])
+       #st.write(display_crosstab(model, X_test_reduced, y_test)[0])
+       y_pred = best_model.predict(X_test_reduced) 
+       st.write(pd.crosstab(y_test, y_pred, rownames=['Réel'], colnames=['Prédiction']))
 
        st.write("Rapport de classification :")
-       st.text(display_crosstab(best_model, X_test_reduced, y_test)[1])
+       #st.text(display_crosstab(model, X_test_reduced, y_test)[1])
        
        
        
@@ -197,11 +201,17 @@ elif page == pages[3]:
     
     st.subheader('Modélisation : Méthode non supervisée')
     
-    #Récupération des variables
-    X_train = st.session_state['X_train']
-    X_test = st.session_state['X_test']
-    y_train = st.session_state['y_train']
-    y_test = st.session_state['y_test']
+    #Récupération var df_new dans la session
+    df_new = st.session_state.df_new
+    
+    df_new = nettoyage(df, remove = True)
+    
+    #Appel fonction processing et séparation des données
+    X_test, X_train, y_test, y_train = processing(df_new)
+    
+    #Checkpoint
+    st.write("Format de X_test après processing: ", X_test.shape)
+    st.write("Format de X_train après processing: ", X_train.shape)
     
     #Pour la modélisation non supervisée non choisissons après différents tests d'opter d'office pour PCA pour des 
     #raisons de performances du code
