@@ -5,19 +5,18 @@ Created on Fri Jun 23 17:44:35 2023
 @author: PatriciaWintrebert
 """
 import numpy as np
-import pandas as pd
 import streamlit as st
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from sklearn.metrics import classification_report
 from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.metrics import silhouette_score
 from sklearn.model_selection import GridSearchCV
-#from scipy.cluster.hierarchy import linkage, dendrogram
+#import matplotlib.pyplot as plt
+#from scipy.cluster.hierarchy import dendrogram
 from scipy.spatial.distance import cdist
 import warnings
 
@@ -51,29 +50,6 @@ def reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled):
     X_train_reduced = reduction.fit_transform(X_train_scaled, y_train)
     X_test_reduced = reduction.transform(X_test_scaled)
     return X_train_reduced, X_test_reduced, reduction
-
-@st.cache_data
-def display_crosstab(_model, X_test_reduced, y_test):
-    '''
-    Affiche la table de contingence et le rapport de classification pour les prédictions d'un modèle donné.
-
-    Parameters
-    ----------
-    _model (object): L'objet de modèle utilisé pour faire les prédictions.
-    X_test_reduced (numpy.array): Les données de test réduites.
-    y_test (numpy.array): Les valeurs cibles réelles correspondant aux données de test.
-
-    Returns
-    -------
-    tuple: Un tuple contenant la table de contingence et le rapport de classification.
-            - crosstab (pandas.DataFrame): La table de contingence des prédictions par rapport aux valeurs réelles.
-            - report (str): Le rapport de classification des prédictions.
-    '''
-    
-    y_pred = _model.predict(X_test_reduced)
-    crosstab = pd.crosstab(y_test, y_pred, rownames=['Réel'], colnames=['Prédiction'])
-    report = classification_report(y_test, y_pred)
-    return crosstab, report
 
 @st.cache_data
 def grid_search_params(best_model, param_grid, X_train_reduced, X_test_reduced, y_train, y_test):

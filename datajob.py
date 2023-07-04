@@ -10,8 +10,9 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import streamlit as st
+from sklearn.metrics import classification_report
 from main_functions import nettoyage, processing
-from modeling_functions import reduction, train_supervised_model, display_crosstab, select_best_model, train_non_supervised_model, search_clusters, display_clusters
+from modeling_functions import reduction, train_supervised_model, select_best_model, train_non_supervised_model, search_clusters, display_clusters
 import warnings
 
 # Ignorer les avertissements
@@ -133,15 +134,15 @@ elif page == pages[2]:
         #Cercle des corrélations, qui nous permet d'évaluer
         #l'influence de chaque variable pour chaque axe de représentation.
         sqrt_eigval = np.sqrt(reduction.explained_variance_)
-        corvar = np.zeros((356, 356))
-        for k in range(356):
+        corvar = np.zeros((357, 357))
+        for k in range(357):
             corvar[:, k] = reduction.components_[k, :] * sqrt_eigval[k]
                 # Delimitation de la figure
             fig, axes = plt.subplots(figsize=(20, 20))
             axes.set_xlim(-1, 1)
             axes.set_ylim(-1, 1)
                 # Affichage des étiquettes (noms des variables)
-        for j in range(356):
+        for j in range(357):
                 plt.annotate(pd.DataFrame(X_train_reduced).columns[j], (corvar[j, 0], corvar[j, 1]), color='#091158')
                 plt.arrow(0, 0, corvar[j, 0]*0.9, corvar[j, 1]*0.9, alpha=0.5, head_width=0.03, color='b')
             # Ajouter les axes
@@ -182,7 +183,8 @@ elif page == pages[2]:
 
        st.write("Score après optimisation des hyperparamètres : ", score)
        
-       st.write("Le meilleur modèle serait :", best_model)
+       st.write("La meilleure combinaison pour ce modèle est :")
+       st.write(best_model)
        
        st.write("Comparaison prédictions vs réalité :")
        #st.write(display_crosstab(model, X_test_reduced, y_test)[0])
@@ -190,9 +192,7 @@ elif page == pages[2]:
        st.write(pd.crosstab(y_test, y_pred, rownames=['Réel'], colnames=['Prédiction']))
 
        st.write("Rapport de classification :")
-       #st.text(display_crosstab(model, X_test_reduced, y_test)[1])
-       
-       
+       st.write(classification_report(y_test, y_pred))
        
 elif page == pages[3]:
     
