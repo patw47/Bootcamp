@@ -6,6 +6,8 @@ Created on Fri Jun 23 17:44:35 2023
 """
 import numpy as np
 import streamlit as st
+import pickle
+import os
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
@@ -292,3 +294,21 @@ def display_clusters(methode_choisie, X_train_reduced):
     silhouette_avg = silhouette_score(X_train_reduced, labels)
     
     return X_train_reduced, silhouette_avg, labels
+
+def save_model(model_choisi, best_params, X_train, y_train):
+    model = LogisticRegression()
+    model.set_params(**best_params)
+    model.fit(X_train, y_train)
+    print("Modèle entraîné avec succès.")
+
+    # Stockage du modèle dans une variable
+    trained_model = model
+    print("Modèle stocké dans une variable.")
+
+    return trained_model
+    
+def run_model(trained_model):
+    model_path = os.path.join("Desktop", "Codage Python", "Streamlit", "model.pkl")
+    model = pickle.load(open(model_path, "rb"))
+    return model
+    

@@ -75,8 +75,9 @@ def nettoyage(df, remove):
     df_new = df_new.drop(df_new[df_new['Q5'].isin(excluded_values)].index)  
     
     #On vire les colonnes peux pertinentes avec beaucoup de NA
-    cols_to_drop = ['Q11', 'Q13', 'Q15', 'Q20', 'Q21', 'Q22', 'Q24', 'Q25']
+    cols_to_drop = ['Q11', 'Q13', 'Q15', 'Q20', 'Q21', 'Q22', 'Q25']
     df_new = df_new.drop(cols_to_drop, axis=1)
+    
 
     if remove == True:
         #On vire les colonnes avec taux de réponse inf à 90%
@@ -91,11 +92,13 @@ def nettoyage(df, remove):
     #Remplacement des dernières valeurs vides catégorielles par leur mode
     df_new['Q6'].fillna(df_new['Q6'].mode().iloc[0], inplace=True)
     df_new['Q8'].fillna(df_new['Q8'].mode().iloc[0], inplace=True)
+   
     
    #Colonnes à traiter en plus si on garde toutes les données
     if remove == False:
         df_new['Q38'].fillna(df_new['Q38'].mode().iloc[0], inplace=True) 
         df_new['Q30'].fillna(df_new['Q30'].mode().iloc[0], inplace=True)
+        df_new['Q24'].fillna(df_new['Q24'].mode().iloc[0], inplace=True)
         #On supprime la colonne Q32 peu pertinente qui rend les jeu de test impair
         df_new = df_new.drop("Q32", axis=1)
 
@@ -129,6 +132,9 @@ def processing(df):
     #Séparation et Encodage variable cible
     label_encoder = LabelEncoder()
     target = label_encoder.fit_transform(df_new['Q5'])
+    
+    target_df = pd.DataFrame({'Label original': df_new['Q5'], 'Encodage': target})
+
 
     #Séparation des Variables explicatives
     feats = df_new.drop('Q5', axis = 1)
@@ -156,7 +162,7 @@ def processing(df):
     df_encoded_test = df_encoded_test.reset_index(drop=True)
     X_test = pd.concat([df_encoded_test, df_new_test], axis=1)
     
-    return X_train, X_test, y_train, y_test
+    return X_train, X_test, y_train, y_test, target_df
 
 def title_filtering(filter_title, column):
     '''
