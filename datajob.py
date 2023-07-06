@@ -157,6 +157,7 @@ elif page == pages[2]:
     st.session_state.X_train = X_train
     st.session_state.X_test = X_test
     st.session_state.target_df = target_df
+    st.session_state.df_new = df_new
     st.session_state.df_new_app = df_new
     
     st.subheader(':gear: Modélisation : Méthode supervisée')
