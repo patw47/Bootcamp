@@ -157,6 +157,7 @@ elif page == pages[2]:
     st.session_state.X_train = X_train
     st.session_state.X_test = X_test
     st.session_state.target_df = target_df
+    st.session_state.df_new_app = df_new
     
     st.subheader(':gear: Modélisation : Méthode supervisée')
     
@@ -312,7 +313,7 @@ elif page == pages[4]:
     #Stockage des variables pour récupération
     y_train = st.session_state.y_train
     X_train = st.session_state.X_train
-    df_new = st.session_state.df_new
+    df_new = st.session_state.df_new_app
 
 
     st.subheader(":pencil: Application du modèle")
