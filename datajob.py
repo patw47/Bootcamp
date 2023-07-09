@@ -13,7 +13,7 @@ import streamlit as st
 import webbrowser
 from sklearn.metrics import classification_report
 from sklearn.decomposition import PCA
-from main_functions import processing, big_cleaning, resample_df, undersampling
+from main_functions import processing, big_cleaning
 from sklearn.linear_model import LogisticRegression
 from modeling_functions import ModelContainer, reduction, train_supervised_model, select_best_model, train_non_supervised_model, search_clusters, display_clusters
 import warnings
@@ -84,7 +84,6 @@ if page == pages[1]:
     st.write(":white_check_mark: Remplacement des dernières valeurs catégorielles vides par leur mode")
     
     #Appel fonction nettoyage des données
-
     df_new = big_cleaning(df)
     
     #Récupération var df_new dans la session
@@ -137,23 +136,32 @@ elif page == pages[2]:
    
     fig = plt.figure(figsize=(8, 6))
     plt.pie(values_count, labels=values_count.index, autopct='%1.1f%%')
-    plt.title("Répartition des salaires par pays et catégorie")
+    plt.title("Répartition des salaires par zone géographique et poste")
     plt.axis('equal')
     st.pyplot(fig)
+    
     st.markdown("---")
     
-    # Répartition des participants par pays
     count_by_country = df_new["Q3"].value_counts()
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.pie(count_by_country.values, labels=count_by_country.index, autopct='%1.1f%%')
-    ax.set_title("Répartition des participants par zone géographique")
-    st.pyplot(fig)
-
     q4_counts = df_new['Q4'].value_counts()
-    fig, ax = plt.subplots(figsize=(8, 6))
-    ax.pie(q4_counts.values, labels=q4_counts.index, autopct='%1.1f%%')
-    ax.set_title("Répartition des niveaux d'études")
-    st.pyplot(fig)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+
+    # Premier sous-graphique : Répartition des participants par zone géographique
+    ax1.pie(count_by_country.values, labels=count_by_country.index, autopct='%1.1f%%')
+    ax1.set_title("Répartition des participants par zone géographique")
+
+    # Deuxième sous-graphique : Répartition des niveaux d'études
+    ax2.pie(q4_counts.values, labels=q4_counts.index, autopct='%1.1f%%')
+    ax2.set_title("Répartition des niveaux d'études")
+
+    # Ajuster les espacements entre les sous-graphiques
+    plt.tight_layout()
+
+    # Afficher la figure
+    st.pyplot(fig) 
+    st.markdown("---")
+
+
 
     #Bar chart expérience des répondants
     fig = plt.figure(figsize=(8, 6))
@@ -172,17 +180,17 @@ elif page == pages[3]:
     
     df_new = big_cleaning(df)
     
-    df_new = undersampling(df_new)
-    
     #Appel fonction processing et séparation des données
     X_test, X_train, y_test, y_train, target_df = processing(df_new)
     
     st.write("Occurence de la variable cible après underresampling de la catégorie majoritaite")
+    
     st.write(df_new['Q5'].value_counts())
     
     #Checkpoint
     st.write("Format de X_test après processing: ", X_test.shape)
     st.write("Format de X_train après processing: ", X_train.shape)
+
   
     #Stockage des variables pour récupération
     st.session_state.y_train = y_train
@@ -349,13 +357,14 @@ elif page == pages[5]:
     
     df = pd.read_csv('kaggle_survey_2020_responses.csv')  
     df_new = big_cleaning(df)
-    
-    df_new = undersampling(df_new)
-    
+
     #Appel fonction processing et séparation des données
     X_test, X_train, y_test, y_train, target_df = processing(df_new)    
-    X_train_reduced, X_test_reduced, reduction = reduction("PCA", X_train, y_train, X_test)
+   # X_train_reduced, X_test_reduced, reduction = reduction("PCA", X_train, y_train, X_test)
+    X_train_reduced = X_train
+    X_test_reduced = X_test
     
+    st.write(X_train_reduced)
     
     best_params = {
         "C":0.1,
@@ -465,17 +474,84 @@ elif page == pages[5]:
       
     # Bouton "Identifier le poste recherché"
     if st.button("Identifier le poste recherché"):
-        features = pd.DataFrame(data=[[country, education_level, programming_language_1, programming_language_2, programming_language_3, 
-                                         programming_language_4, programming_language_5, programming_language_6, programming_language_7, experience,
-                                         ide_1, ide_2, ide_3, ide_4, ide_5, ide_6, ide_7, bi, salary, ml_1, ml_2, ml_3, ml_4,
-                                         ml_5, ml_6, ml_7, tk_1, tk_2, tk_3, tk_4, tk_5, tk_6, tk_7, tk_8]], 
-                                  columns=['country', 'education_level', 
-                                           'programming_language_1', 'programming_language_2' ,'programming_language_3', 'programming_language_4', 'programming_language_5', 'programming_language_6', 'programming_language_7',
-                                           'experience', 'ide_1', 'ide_2', 'ide_3', 'ide_4', 'ide_5', 'ide_6', 'ide_7', 'BI','salary',
-                                           'ml_1', 'ml_2', 'ml_3', 'ml_4', 'ml_5', 'ml_6', 'ml_7', 'tk_1', 'tk_2', 'tk_3', 'tk_4', 'tk_5', 'tk_6', 'tk_7', 'tk_8'])
-      
-   
-        st.write(features.head())
+        features = pd.DataFrame(
+        data=[
+            [
+                country,
+                education_level,
+                programming_language_1,
+                programming_language_2,
+                programming_language_3,
+                programming_language_4,
+                programming_language_5,
+                programming_language_6,
+                programming_language_7,
+                experience,
+                ide_1,
+                ide_2,
+                ide_3,
+                ide_4,
+                ide_5,
+                ide_6,
+                ide_7,
+                bi,
+                salary,
+                ml_1,
+                ml_2,
+                ml_3,
+                ml_4,
+                ml_5,
+                ml_6,
+                ml_7,
+                tk_1,
+                tk_2,
+                tk_3,
+                tk_4,
+                tk_5,
+                tk_6,
+                tk_7,
+                tk_8,
+            ]
+        ],
+        columns=[
+            "country",
+            "education_level",
+            "programming_language_1",
+            "programming_language_2",
+            "programming_language_3",
+            "programming_language_4",
+            "programming_language_5",
+            "programming_language_6",
+            "programming_language_7",
+            "experience",
+            "ide_1",
+            "ide_2",
+            "ide_3",
+            "ide_4",
+            "ide_5",
+            "ide_6",
+            "ide_7",
+            "BI",
+            "salary",
+            "ml_1",
+            "ml_2",
+            "ml_3",
+            "ml_4",
+            "ml_5",
+            "ml_6",
+            "ml_7",
+            "tk_1",
+            "tk_2",
+            "tk_3",
+            "tk_4",
+            "tk_5",
+            "tk_6",
+            "tk_7",
+            "tk_8",
+        ],
+    )
+
+        
         # Encoder les données catégorielles avec pd.get_dummies()
         features_encoded = pd.get_dummies(features)
         
@@ -485,9 +561,11 @@ elif page == pages[5]:
         for col in missing_cols:
             features_encoded[col] = 0
         features_encoded = features_encoded[X_train.columns]
-        st.write(features_encoded.shape)
         
-        pca = PCA()
+        st.write(features_encoded)
+        
+        
+        #pca = PCA()
         #features_reduced = pca.fit_transform(features_encoded)
         prediction = model_app.predict(features_encoded)
       
@@ -495,8 +573,6 @@ elif page == pages[5]:
         
       #On récupère la variable target sous forme d'un df pour extraire le label correspondant
         target_df = st.session_state.target_df
-        
-        st.write(target_df)
 
         # Afficher la prédiction
         #st.write("Le poste prédit est :", target_df.loc[prediction[0], 'Label original'])

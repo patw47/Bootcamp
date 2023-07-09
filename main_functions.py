@@ -11,7 +11,6 @@ import streamlit as st
 import re
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from sklearn.utils import resample
 
 def big_cleaning(df):
     '''
@@ -122,13 +121,16 @@ def big_cleaning(df):
   #  df_new['Q38'].fillna("None", inplace=True)
     df_new['Q25'].fillna("$0 ($USD)", inplace=True)
     
-      
+    #On retire les salaires aberrants
     df_new = remove_outliers_by_category(df_new)
     
     #Enleve des espaces entre les caractères
     df_new = df_new.apply(lambda x: x.str.strip() if x.dtype == "object" else x)
     
+    #Salaires, on remplace les vides par le mode
     df_new['Q24'].fillna(df_new['Q24'].mode().iloc[0], inplace=True)
+    
+    #df_new = resample_df(df_new)
 
     #Stockage df_new dans la var de session
     st.session_state.df_new = df_new
@@ -220,11 +222,10 @@ def title_filtering(column):
 
     '''        
     replacement_dict = {
-        "DBA/Database Engineer": "Machine Learning Engineer",
-        "Data Engineer": "Machine Learning Engineer",
-        "Statistician" : "Data Analyst",
-        "Research Scientist" : "Data Scientist",
-        "Business Analyst" : "Data Analyst"
+        "DBA/Database Engineer": "Data Engineer",
+        "Business Analyst" : "Data Analyst",
+        "Statistician" : "Data Analyst"
+   
         }
     column = column.replace(replacement_dict)
     return column
@@ -346,60 +347,16 @@ def remove_outliers_by_category(df):
     
 def resample_df(df_new):
     
-   # target_counts = df_new.loc[df_new['Q5'] != "Data Scientist", 'Q5'].value_counts()
+    target_counts = df_new.loc[df_new['Q5'] != "Data Scientist", 'Q5'].value_counts()
 
    # Trouver le nombre d'occurrences de la catégorie la moins fréquente
-   # min_count = int(target_counts.mean())
+    min_count = int(target_counts.mean())
 
    # Rééchantillonner la valeur cible 'Data Scientist' pour atteindre le nombre d'occurrences minimum
-   # df_data_scientist = df_new[df_new['Q5'] == 'Data Scientist'].sample(n=min_count, replace=False, random_state=42)
+    df_data_scientist = df_new[df_new['Q5'] == 'Data Scientist'].sample(n=min_count, replace=False, random_state=42)
 
    # Concaténer les observations rééchantillonnées avec les autres catégories de la variable cible
-   # df_other_categories = df_new[df_new['Q5'] != 'Data Scientist']
-   # df_new = pd.concat([df_data_scientist, df_other_categories])
+    df_other_categories = df_new[df_new['Q5'] != 'Data Scientist']
+    df_new = pd.concat([df_data_scientist, df_other_categories])
     
-    
-    # Séparer les données avec la valeur "Data Scientist"
-    data_scientist = df_new[df_new['Q5'] == "Data Scientist"]
-
-    # Séparer les données sans la valeur "Data Scientist"
-    other_categories = df_new[df_new['Q5'] != "Data Scientist"]
-
-
-    # Rééchantillonner chaque groupe en conservant le nombre d'occurrences initial
-    undersampled_data = other_categories.groupby('Q5').apply(lambda x: x.sample(len(data_scientist), replace=True, random_state=42))
-
-    # Combiner les données rééchantillonnées avec la valeur "Data Scientist"
-    df_new = pd.concat([data_scientist, undersampled_data])
-
-    return df_new
-
-def undersampling(df_new):
-    # Compter le nombre d'exemples dans chaque classe
-    class_counts = df_new['Q5'].value_counts()
-
-   # Trouver la classe majoritaire
-    major_class = class_counts.idxmax()
-
-   # Calculer le nombre d'exemples de la classe majoritaire
-    major_class_count = class_counts[major_class]
-
-   # Sélectionner les exemples de la classe majoritaire
-    major_class_samples = df_new[df_new['Q5'] == major_class]
-
-   # Effectuer l'undersampling de la classe majoritaire en utilisant resample
-    undersampled_major_class = resample(major_class_samples,
-                                       replace=False,  # Ne pas remplacer les exemples
-                                       n_samples=major_class_count,  # Nombre d'exemples à sélectionner
-                                       random_state=42)  # Graine aléatoire pour la reproductibilité
-
-   # Sélectionner les exemples des autres classes
-    other_classes = df_new[df_new['Q5'] != major_class]
-
-   # Concaténer les exemples de la classe majoritaire undersamplée avec les exemples des autres classes
-    df_new = pd.concat([undersampled_major_class, other_classes])
-
-   # Réorganiser l'index du DataFrame résultant
-    df_new.reset_index(drop=True, inplace=True)
-
     return df_new
