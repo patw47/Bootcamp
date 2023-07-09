@@ -52,11 +52,11 @@ page = st.sidebar.radio('Aller vers', pages)
 
 if page == pages[0]:
     
-    st.image('Diapositive1.jpg')   
-    st.image('Diapositive2.jpg')
-    st.image('Diapositive3.jpg')
-    st.image('Diapositive4.jpg')
-    st.image('Diapositive5.jpg')
+    st.image('Diapositive1.JPG')   
+    st.image('Diapositive2.JPG')
+    st.image('Diapositive3.JPG')
+    st.image('Diapositive4.JPG')
+    st.image('Diapositive5.JPG')
     
 if page == pages[1]:
     
@@ -214,15 +214,15 @@ elif page == pages[3]:
         #Cercle des corrélations, qui nous permet d'évaluer
         #l'influence de chaque variable pour chaque axe de représentation.
         sqrt_eigval = np.sqrt(reduction.explained_variance_)
-        corvar = np.zeros((74, 74))
-        for k in range(74):
+        corvar = np.zeros((67, 67))
+        for k in range(67):
             corvar[:, k] = reduction.components_[k, :] * sqrt_eigval[k]
                 # Delimitation de la figure
             fig, axes = plt.subplots(figsize=(10,10))
             axes.set_xlim(-1, 1)
             axes.set_ylim(-1, 1)
                 # Affichage des étiquettes (noms des variables)
-        for j in range(74):
+        for j in range(67):
                 plt.annotate(pd.DataFrame(X_train).columns[j], (corvar[j, 0], corvar[j, 1]), color='#091158')
                 plt.arrow(0, 0, corvar[j, 0]*0.9, corvar[j, 1]*0.9, alpha=0.5, head_width=0.03, color='b')
             # Ajouter les axes
