@@ -373,4 +373,33 @@ def resample_df(df_new):
     df_new = pd.concat([data_scientist, undersampled_data])
 
     return df_new
-    
+
+def undersampling(df_new):
+    # Compter le nombre d'exemples dans chaque classe
+    class_counts = df_new['Q5'].value_counts()
+
+   # Trouver la classe majoritaire
+    major_class = class_counts.idxmax()
+
+   # Calculer le nombre d'exemples de la classe majoritaire
+    major_class_count = class_counts[major_class]
+
+   # Sélectionner les exemples de la classe majoritaire
+    major_class_samples = df_new[df_new['Q5'] == major_class]
+
+   # Effectuer l'undersampling de la classe majoritaire en utilisant resample
+    undersampled_major_class = resample(major_class_samples,
+                                       replace=False,  # Ne pas remplacer les exemples
+                                       n_samples=major_class_count,  # Nombre d'exemples à sélectionner
+                                       random_state=42)  # Graine aléatoire pour la reproductibilité
+
+   # Sélectionner les exemples des autres classes
+    other_classes = df_new[df_new['Q5'] != major_class]
+
+   # Concaténer les exemples de la classe majoritaire undersamplée avec les exemples des autres classes
+    df_new = pd.concat([undersampled_major_class, other_classes])
+
+   # Réorganiser l'index du DataFrame résultant
+    df_new.reset_index(drop=True, inplace=True)
+
+    return df_new

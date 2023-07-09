@@ -13,7 +13,7 @@ import streamlit as st
 import webbrowser
 from sklearn.metrics import classification_report
 from sklearn.decomposition import PCA
-from main_functions import processing, big_cleaning, resample_df
+from main_functions import processing, big_cleaning, resample_df, undersampling
 from sklearn.linear_model import LogisticRegression
 from modeling_functions import ModelContainer, reduction, train_supervised_model, select_best_model, train_non_supervised_model, search_clusters, display_clusters
 import warnings
@@ -84,7 +84,7 @@ if page == pages[1]:
     st.write(":white_check_mark: Remplacement des dernières valeurs catégorielles vides par leur mode")
     
     #Appel fonction nettoyage des données
-    #df_new = nettoyage(df, remove = False)
+
     df_new = big_cleaning(df)
     
     #Récupération var df_new dans la session
@@ -170,10 +170,9 @@ elif page == pages[3]:
     st.write(":white_check_mark: Resampling de la variable cible")
     st.write(":white_check_mark: Réduction au choix avec PCA ou LDA")
     
-    #df_new = nettoyage(df, remove = False)
     df_new = big_cleaning(df)
     
-    df_new = resample_df(df_new)
+    df_new = undersampling(df_new)
     
     #Appel fonction processing et séparation des données
     X_test, X_train, y_test, y_train, target_df = processing(df_new)
@@ -351,7 +350,7 @@ elif page == pages[5]:
     df = pd.read_csv('kaggle_survey_2020_responses.csv')  
     df_new = big_cleaning(df)
     
-    df_new = resample_df(df_new)
+    df_new = undersampling(df_new)
     
     #Appel fonction processing et séparation des données
     X_test, X_train, y_test, y_train, target_df = processing(df_new)    
