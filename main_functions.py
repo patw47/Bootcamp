@@ -8,6 +8,7 @@ Created on Tue Jun 27 10:17:41 2023
 import numpy as np
 import pandas as pd
 import streamlit as st
+import re
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import resample
@@ -101,7 +102,7 @@ def big_cleaning(df):
     
     df_new["Q3"] = df_new["Q3"].apply(group_countries_by_region)
     df_new["Q4"] = df_new["Q4"].apply(group_education)
-    
+    df_new["Q24"] = df_new["Q24"].apply(group_salaries)
     
     
    # cols = colonnes_incompletes(df_new, 0.2)
@@ -134,102 +135,6 @@ def big_cleaning(df):
     
     return df_new    
     
-def nettoyage(df, remove):
-    '''
-    Effectue le nettoyage des données dans un DataFrame avant processing
-
-    Parameters
-    ----------
-    df (pandas.DataFrame): Le DataFrame contenant les données à nettoyer 
-    remove (bool): Indique si les colonnes incomplètes doivent être supprimées pour alléger le calcul
-
-    Returns
-    -------
-    pandas.DataFrame: Le DataFrame nettoyé..
-
-    '''
-    #On vire la première ligne 
-    df = df.drop(df.index[0])
-
-    #On renomme la colonne Duration
-    df = df.rename(columns={"Time from Start to Finish (seconds)": "Duration"})
-    #Conversion duration en int
-    df['Duration'].astype(int)
-    #Ajout colonne DurationMin convertie en minutes
-    df['Duration'] = pd.to_numeric(df['Duration'], errors='coerce')
-    df['DurationMin'] = df['Duration'] / 60
-
-    #nombre de lignes en dessous de 2 
-    duration_threshold = 2  # Threshold in minutes
-    df_minvalues = df[df['DurationMin'] < duration_threshold]
-
-    #Création du nouveau df dépourvu de ces valeurs aberrantes
-    df_new = df.drop(df_minvalues.index)
-    df_new.head()
-
-    #Création du nouveau df dépourvu des gens qui ne programment pas
-    df_new = df_new[df_new['Q6'] != "I have never written code"]
-
-    #On vire toutes les lignes dont la Q5 (titre) est vide
-    df_new = df_new.dropna(subset=['Q5'])
-    
-    #On regroupe les variables cibles par familles de métiers
-    #filter_title = "Oui"
-    #df_new['Q5'] = title_filtering(filter_title, df_new['Q5'])
-
-    #On vire les colonnes correspondant aux question "dans deux ans" 
-    #On les met dans un dataframe pour plus tard 
-    df_future = df_new.iloc[:, 256:356]
-
-    #On les efface de df_new
-    df_new = df_new.drop(columns=df_future.columns)
-
-    #On vire la colonne duration devenue inutile
-    df_new.drop('Duration', axis = 1, inplace = True)
-
-    #On exclue les lignes contenant les vaariables cibles qui ne nous intéressent pas 
-    #On réserve le dataframe de côté pour une éventuelle application plus tard
-    # On garde de côté un df contenant ces valeurs
-    excluded_values = ["Student", "Other", "Currently not employed"]
-    #df_backup = df_new[df_new['Q5'].isin(excluded_values)]
-
-    #On vire les lignes qui ne nous concernent pas du dataframe
-    df_new = df_new.drop(df_new[df_new['Q5'].isin(excluded_values)].index)  
-    
-    #On vire les colonnes peux pertinentes avec beaucoup de NA
-    cols_to_drop = ['Q11', 'Q13', 'Q15', 'Q20', 'Q21', 'Q22', 'Q25']
-    df_new = df_new.drop(cols_to_drop, axis=1)
-    
-
-    if remove == True:
-        #On vire les colonnes avec taux de réponse inf à 90%
-        cols = colonnes_incompletes(df_new, 0.9)
-        df_new = df_new.drop(cols, axis=1)
-    
-    #Conversion des valeurs vides des colonnes contenant les sous questions (identifiées par "_" en 0 et des valeurs existantes en 1)
-    for column in df_new.columns:
-        if "_" in column:
-            df_new[column] = np.where(df_new[column].fillna('') != '', 1, 0)
-      
-    #Remplacement des dernières valeurs vides catégorielles par leur mode
-    df_new['Q6'].fillna(df_new['Q6'].mode().iloc[0], inplace=True)
-    df_new['Q8'].fillna(df_new['Q8'].mode().iloc[0], inplace=True)
-    df_new['Q32'].fillna(df_new['Q32'].mode().iloc[0], inplace=True)
-   
-    
-   #Colonnes à traiter en plus si on garde toutes les données
-    if remove == False:
-        df_new['Q38'].fillna(df_new['Q38'].mode().iloc[0], inplace=True) 
-        df_new['Q30'].fillna(df_new['Q30'].mode().iloc[0], inplace=True)
-        df_new['Q24'].fillna(df_new['Q24'].mode().iloc[0], inplace=True)
-        #On supprime la colonne Q32 peu pertinente qui rend les jeu de test impair
-        df_new = df_new.drop("Q32", axis=1)
-
-    #Stockage df_new dans la var de session
-    st.session_state.df_new = df_new
-    
-    return df_new    
-
 
 def processing(df):
     '''
@@ -350,12 +255,46 @@ def group_countries_by_region(country):
         return country
     
 def group_education(school):
+       
     no_preference = ["Professional degree", "Some college/university study without earning a bachelor's degree", 
                      'No formal education past high school', 'I prefer not to answer', "Some college/university study without earning a bachelorâ€™s degree"]
+    
+    pattern = r"study without earning"
+    
+    if re.search(pattern, school):
+        no_preference.append(school)
+
     if school in no_preference:
         return "No University degree"
     else:
         return school
+    
+def group_salaries(salary):
+  
+    very_low = ['20,000-24,999', '25,000-29,999']
+    
+    low = ['50,000-59,999', '30,000-39,999', '40,000-49,999']
+    
+    medium = ['60,000-69,999', '70,000-79,999', '80,000-89,999']
+    
+    expert = ['90,000-99,999', '100,000-124,999' ]
+    
+    high = ['125,000-149,999','150,000-199,999']
+    
+    very_high = ['200,000-249,999']
+    
+    if salary in very_low:
+        return "20'000 - 30'000 par an"
+    elif salary in low:
+        return "30'000 - 60'000 par an"
+    elif salary in medium:
+        return "60'000 - 90'000 par an"
+    elif salary in expert:
+        return "90'000 - 125'000 par an"
+    elif salary in high:
+        return "125'000 - 200'000 par an"
+    elif salary in very_high:
+        return "plus de 200'000 par an"
 
 def colonnes_incompletes(dataframe, seuil):
     '''
@@ -407,17 +346,31 @@ def remove_outliers_by_category(df):
     
 def resample_df(df_new):
     
-    target_counts = df_new['Q5'].value_counts()
+   # target_counts = df_new.loc[df_new['Q5'] != "Data Scientist", 'Q5'].value_counts()
 
    # Trouver le nombre d'occurrences de la catégorie la moins fréquente
-    min_count = int(target_counts.mean())
+   # min_count = int(target_counts.mean())
 
    # Rééchantillonner la valeur cible 'Data Scientist' pour atteindre le nombre d'occurrences minimum
-    df_data_scientist = df_new[df_new['Q5'] == 'Data Scientist'].sample(n=min_count, replace=False, random_state=42)
+   # df_data_scientist = df_new[df_new['Q5'] == 'Data Scientist'].sample(n=min_count, replace=False, random_state=42)
 
    # Concaténer les observations rééchantillonnées avec les autres catégories de la variable cible
-    df_other_categories = df_new[df_new['Q5'] != 'Data Scientist']
-    df_new = pd.concat([df_data_scientist, df_other_categories])
+   # df_other_categories = df_new[df_new['Q5'] != 'Data Scientist']
+   # df_new = pd.concat([df_data_scientist, df_other_categories])
+    
+    
+    # Séparer les données avec la valeur "Data Scientist"
+    data_scientist = df_new[df_new['Q5'] == "Data Scientist"]
+
+    # Séparer les données sans la valeur "Data Scientist"
+    other_categories = df_new[df_new['Q5'] != "Data Scientist"]
+
+
+    # Rééchantillonner chaque groupe en conservant le nombre d'occurrences initial
+    undersampled_data = other_categories.groupby('Q5').apply(lambda x: x.sample(len(data_scientist), replace=True, random_state=42))
+
+    # Combiner les données rééchantillonnées avec la valeur "Data Scientist"
+    df_new = pd.concat([data_scientist, undersampled_data])
 
     return df_new
     

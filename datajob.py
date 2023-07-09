@@ -13,7 +13,7 @@ import streamlit as st
 import webbrowser
 from sklearn.metrics import classification_report
 from sklearn.decomposition import PCA
-from main_functions import nettoyage, processing, big_cleaning, resample_df
+from main_functions import processing, big_cleaning, resample_df
 from sklearn.linear_model import LogisticRegression
 from modeling_functions import ModelContainer, reduction, train_supervised_model, select_best_model, train_non_supervised_model, search_clusters, display_clusters
 import warnings
@@ -72,13 +72,14 @@ if page == pages[1]:
         
         st.markdown("---")
 
-    st.subheader(":cooking: Préparation des données en 8 étapes : ")
+    st.subheader(":cooking: Préparation des données en 9 étapes : ")
     st.write(":white_check_mark: Suppression première ligne inutile")
     st.write(":white_check_mark: Suppression lignes dont la valeur duration est inf à 2 min")
     st.write(":white_check_mark: Suppression des lignes où la réponse à Q6 est **_I have never written Code_**")
     st.write(":white_check_mark: Suppression des colonnes avec questions sur le thème **_Projection dans deux ans_**")
-    st.write(":white_check_mark: Regroupement par famille de métiers")
-    st.write(":white_check_mark: Suppression de quelques colonnes peu pertinentes")
+    st.write(":white_check_mark: Regroupement par famille de métiers, par classe de salaires, région réographique")
+    st.write(":white_check_mark: Suppression de valeurs aberrantes (Salaires trop bas ou au contraire trop hauts)")
+    st.write(":white_check_mark: Sélection de colonnes pertinentes pour la logique business")
     st.write(":white_check_mark: Remplacement des valeurs par 0 ou 1 pour les colonnes contenant des réponses binaires")
     st.write(":white_check_mark: Remplacement des dernières valeurs catégorielles vides par leur mode")
     
@@ -117,16 +118,7 @@ elif page == pages[2]:
     #Récupération var df_new dans la session
     df_new = st.session_state.df_new
     df = st.session_state.df
-    
-    st.write(df_new.shape)
-      
 
-    
-    #Bar chart expérience des répondants
-    fig = plt.figure()
-    ax = sns.countplot(x = "Q6", data = df_new, order=df_new["Q6"].value_counts().index.sort_values())
-    ax.set_title("Expérience des participants")
-    st.pyplot(fig)
     
     values_count = df_new["Q5"].value_counts()    
     fig = plt.figure(figsize=(8, 6))
@@ -147,34 +139,35 @@ elif page == pages[2]:
     plt.pie(values_count, labels=values_count.index, autopct='%1.1f%%')
     plt.title("Répartition des salaires par pays et catégorie")
     plt.axis('equal')
-
-    # Afficher le graphique dans Streamlit
     st.pyplot(fig)
+    st.markdown("---")
     
-    
-    # Compter le nombre d'occurrences par Q3
+    # Répartition des participants par pays
     count_by_country = df_new["Q3"].value_counts()
-
-# Créer le graphique
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8, 6))
     ax.pie(count_by_country.values, labels=count_by_country.index, autopct='%1.1f%%')
-    ax.set_title("Répartition par pays")
+    ax.set_title("Répartition des participants par zone géographique")
     st.pyplot(fig)
 
     q4_counts = df_new['Q4'].value_counts()
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(8, 6))
     ax.pie(q4_counts.values, labels=q4_counts.index, autopct='%1.1f%%')
-    ax.set_title("Répartition des niveaux d'études (Q4)")
+    ax.set_title("Répartition des niveaux d'études")
     st.pyplot(fig)
 
-
+    #Bar chart expérience des répondants
+    fig = plt.figure(figsize=(8, 6))
+    ax = sns.countplot(x = "Q6", data = df_new, order=df_new["Q6"].value_counts().index.sort_values())
+    ax.set_title("Expérience des participants")
+    st.pyplot(fig)
 
 elif page == pages[3]:
      
-    st.subheader(":chains: Encodage des données en 4 étapes : ")
+    st.subheader(":chains: Encodage des données en 5 étapes : ")
     st.write(":white_check_mark: Séparation variable cible et encodage avec LabelEncoder")
     st.write(":white_check_mark: Séparation jeu de test et jeu d'entrainement")
     st.write(":white_check_mark: Encodage des variables catégorielles avec Getdummies")
+    st.write(":white_check_mark: Resampling de la variable cible")
     st.write(":white_check_mark: Réduction au choix avec PCA ou LDA")
     
     #df_new = nettoyage(df, remove = False)
@@ -364,8 +357,6 @@ elif page == pages[5]:
     X_test, X_train, y_test, y_train, target_df = processing(df_new)    
     X_train_reduced, X_test_reduced, reduction = reduction("PCA", X_train, y_train, X_test)
     
-    X_train_reduced.shape
-    y_train.shape
     
     best_params = {
         "C":0.1,
@@ -518,5 +509,8 @@ elif page == pages[5]:
     
 
         st.subheader(":pencil: Conclusion")
-        st.write("En quelques mots : Beaucoup d'autres tests à faire, enrichir les données avec plus de data")
+        st.write("En quelques mots :")
+        st.write("Beaucoup d'autres tests à faire, enrichir les données avec plus de data.")
+        st.write("Notre hypothèse : À l'époque du questionnaire la majorité des postes data étaient référencés sous l'appelation datascientist.")
+
    
