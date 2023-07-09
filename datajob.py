@@ -183,10 +183,6 @@ elif page == pages[3]:
     #Appel fonction processing et séparation des données
     X_test, X_train, y_test, y_train, target_df = processing(df_new)
     
-    st.write("Occurence de la variable cible après underresampling de la catégorie majoritaite")
-    
-    st.write(df_new['Q5'].value_counts())
-    
     #Checkpoint
     st.write("Format de X_test après processing: ", X_test.shape)
     st.write("Format de X_train après processing: ", X_train.shape)
