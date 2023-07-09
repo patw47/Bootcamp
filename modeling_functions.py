@@ -25,6 +25,7 @@ import warnings
 # Ignorer les avertissements
 warnings.filterwarnings("ignore")
 
+    
 @st.cache_data
 def reduction(reduction_choice, X_train_scaled, y_train, X_test_scaled):
     '''
@@ -220,9 +221,10 @@ def select_best_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_
     best_model = grid_search.best_estimator_
     best_params = grid_search.best_params_
     
+    score_train = best_model.score(X_train_reduced, y_train)
     score = best_model.score(X_test_reduced, y_test)
 
-    return best_model, best_params, model, score
+    return best_model, best_params, model, score_train, score
 
 @st.cache_resource
 def search_clusters(methode_choisie, X_train_reduced):
@@ -295,20 +297,27 @@ def display_clusters(methode_choisie, X_train_reduced):
     
     return X_train_reduced, silhouette_avg, labels
 
-def save_model(model_choisi, best_params, X_train, y_train):
-    model = LogisticRegression()
-    model.set_params(**best_params)
-    model.fit(X_train, y_train)
-    print("Modèle entraîné avec succès.")
+class ModelContainer:
+    def __init__(self):
+        self.model = None
 
-    # Stockage du modèle dans une variable
-    trained_model = model
-    print("Modèle stocké dans une variable.")
+    def store_model(self, model):
+        """
+        Stocke le modèle entraîné.
 
-    return trained_model
-    
-def run_model(trained_model):
-    model_path = os.path.join("Desktop", "Codage Python", "Streamlit", "model.pkl")
-    model = pickle.load(open(model_path, "rb"))
-    return model
-    
+        Args:
+            model (object): Modèle entraîné à stocker.
+
+        Returns:
+            None
+        """
+        self.model = model
+
+    def load_model(self):
+        """
+        Charge le modèle stocké.
+
+        Returns:
+            object: Modèle chargé.
+        """
+        return self.model

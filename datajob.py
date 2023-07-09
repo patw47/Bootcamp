@@ -12,11 +12,11 @@ import matplotlib.pyplot as plt
 import streamlit as st
 import webbrowser
 from sklearn.metrics import classification_report
-from main_functions import nettoyage, processing
+from sklearn.decomposition import PCA
+from main_functions import nettoyage, processing, big_cleaning, resample_df
 from sklearn.linear_model import LogisticRegression
-from modeling_functions import  reduction, train_supervised_model, select_best_model, train_non_supervised_model, search_clusters, display_clusters
+from modeling_functions import ModelContainer, reduction, train_supervised_model, select_best_model, train_non_supervised_model, search_clusters, display_clusters
 import warnings
-
 # Ignorer les avertissements
 warnings.filterwarnings("ignore")
 
@@ -26,7 +26,8 @@ st.write("Etude de faisabilité à partir de [données Kaggle](https://www.kaggl
 df = pd.read_csv('kaggle_survey_2020_responses.csv')
 st.session_state.df = df
 
-pages = ['Exploration des données', 
+pages = ['Introduction',
+         'Exploration des données', 
          'Data Visualisation',
          'Modélisation Supervisée',
          'Modélisation non supervisée',
@@ -50,6 +51,15 @@ st.sidebar.image('datajob.jpg')
 page = st.sidebar.radio('Aller vers', pages)
 
 if page == pages[0]:
+    
+    st.image('Diapositive1.jpg')   
+    st.image('Diapositive2.jpg')
+    st.image('Diapositive3.jpg')
+    st.image('Diapositive4.jpg')
+    st.image('Diapositive5.jpg')
+    
+if page == pages[1]:
+    
     st.subheader(':broom: Nettoyage et Préparation des données')   
     
     st.write(":mag_right: Aperçu du Dataframe original")
@@ -73,7 +83,8 @@ if page == pages[0]:
     st.write(":white_check_mark: Remplacement des dernières valeurs catégorielles vides par leur mode")
     
     #Appel fonction nettoyage des données
-    df_new = nettoyage(df, remove = False)
+    #df_new = nettoyage(df, remove = False)
+    df_new = big_cleaning(df)
     
     #Récupération var df_new dans la session
     st.session_state.df_new = df_new
@@ -96,8 +107,10 @@ if page == pages[0]:
     if st.checkbox("Afficher les valeurs manquantes après nettoyage"):
         st.dataframe(df_new.isna().sum())
         st.write("Total valeurs manquantes :", df_new.isna().sum().sum())
+        
+    st.write(df_new.shape)
       
-elif page == pages[1]:
+elif page == pages[2]:
     
     st.subheader(':bar_chart: Data Vizualisation')  
     
@@ -105,11 +118,9 @@ elif page == pages[1]:
     df_new = st.session_state.df_new
     df = st.session_state.df
     
-    #Bar chart âge des répondants
-    fig = plt.figure()
-    ax = sns.countplot(x="Q1", data=df_new, order=df_new["Q1"].value_counts().index.sort_values())
-    ax.set_title("Age des participants")
-    st.pyplot(fig)
+    st.write(df_new.shape)
+      
+
     
     #Bar chart expérience des répondants
     fig = plt.figure()
@@ -117,24 +128,48 @@ elif page == pages[1]:
     ax.set_title("Expérience des participants")
     st.pyplot(fig)
     
+    values_count = df_new["Q5"].value_counts()    
+    fig = plt.figure(figsize=(8, 6))
+    plt.pie(values_count, labels=values_count.index, autopct='%1.1f%%')
+    plt.title("Répartition de la variable cible")
+    plt.axis('equal')
+    st.pyplot(fig)
     
-    #Heatmap corrélation titre et salaire
-    st.subheader("Relation entre poste et salaire annuel en fonction du pays")
-    selected_country = st.selectbox("Sélectionner ou taper le nom d'un pays", [''] + list(df_new['Q3'].unique()))
+    st.markdown("---")
+    # Filtrer par pays
+    selected_country = st.selectbox("Filtrer par pays", sorted(df_new["Q3"].unique()))
+    # Filtrer par poste
+    selected_category = st.selectbox("Filtrer par catégorie", df_new["Q5"].unique())
+    filtered_df = df_new[(df_new["Q3"] == selected_country) & (df_new["Q5"] == selected_category)]
+    values_count = filtered_df["Q24"].value_counts()
+   
+    fig = plt.figure(figsize=(8, 6))
+    plt.pie(values_count, labels=values_count.index, autopct='%1.1f%%')
+    plt.title("Répartition des salaires par pays et catégorie")
+    plt.axis('equal')
 
-    if selected_country:
-        filtered_data = df_new[df_new['Q3'] == selected_country]
-    else:
-        filtered_data = df_new
-    contingency_table = pd.crosstab(filtered_data['Q24'], filtered_data['Q5'])
-    fig = plt.figure(figsize=(10, 20))
-    sns.heatmap(contingency_table, annot=True, fmt='d', cmap='YlGnBu')
-    plt.xlabel('Titre')
-    plt.ylabel('Salaire annuel')
+    # Afficher le graphique dans Streamlit
+    st.pyplot(fig)
+    
+    
+    # Compter le nombre d'occurrences par Q3
+    count_by_country = df_new["Q3"].value_counts()
+
+# Créer le graphique
+    fig, ax = plt.subplots()
+    ax.pie(count_by_country.values, labels=count_by_country.index, autopct='%1.1f%%')
+    ax.set_title("Répartition par pays")
+    st.pyplot(fig)
+
+    q4_counts = df_new['Q4'].value_counts()
+    fig, ax = plt.subplots()
+    ax.pie(q4_counts.values, labels=q4_counts.index, autopct='%1.1f%%')
+    ax.set_title("Répartition des niveaux d'études (Q4)")
     st.pyplot(fig)
 
 
-elif page == pages[2]:
+
+elif page == pages[3]:
      
     st.subheader(":chains: Encodage des données en 4 étapes : ")
     st.write(":white_check_mark: Séparation variable cible et encodage avec LabelEncoder")
@@ -142,10 +177,16 @@ elif page == pages[2]:
     st.write(":white_check_mark: Encodage des variables catégorielles avec Getdummies")
     st.write(":white_check_mark: Réduction au choix avec PCA ou LDA")
     
-    df_new = nettoyage(df, remove = False)
+    #df_new = nettoyage(df, remove = False)
+    df_new = big_cleaning(df)
+    
+    df_new = resample_df(df_new)
     
     #Appel fonction processing et séparation des données
     X_test, X_train, y_test, y_train, target_df = processing(df_new)
+    
+    st.write("Occurence de la variable cible après underresampling de la catégorie majoritaite")
+    st.write(df_new['Q5'].value_counts())
     
     #Checkpoint
     st.write("Format de X_test après processing: ", X_test.shape)
@@ -173,16 +214,16 @@ elif page == pages[2]:
         #Cercle des corrélations, qui nous permet d'évaluer
         #l'influence de chaque variable pour chaque axe de représentation.
         sqrt_eigval = np.sqrt(reduction.explained_variance_)
-        corvar = np.zeros((381, 381))
-        for k in range(381):
+        corvar = np.zeros((74, 74))
+        for k in range(74):
             corvar[:, k] = reduction.components_[k, :] * sqrt_eigval[k]
                 # Delimitation de la figure
-            fig, axes = plt.subplots(figsize=(10, 10))
+            fig, axes = plt.subplots(figsize=(10,10))
             axes.set_xlim(-1, 1)
             axes.set_ylim(-1, 1)
                 # Affichage des étiquettes (noms des variables)
-        for j in range(381):
-                plt.annotate(pd.DataFrame(X_train_reduced).columns[j], (corvar[j, 0], corvar[j, 1]), color='#091158')
+        for j in range(74):
+                plt.annotate(pd.DataFrame(X_train).columns[j], (corvar[j, 0], corvar[j, 1]), color='#091158')
                 plt.arrow(0, 0, corvar[j, 0]*0.9, corvar[j, 1]*0.9, alpha=0.5, head_width=0.03, color='b')
             # Ajouter les axes
         plt.plot([-1, 1], [0, 0], color='silver', linestyle='-', linewidth=1)
@@ -193,6 +234,18 @@ elif page == pages[2]:
         plt.xlabel('AXE 1')
         plt.ylabel('AXE 2')
         st.pyplot(plt)
+        
+        # Obtention des poids des variables dans les composantes principales
+        variable_weights = pd.DataFrame(reduction.components_, columns=X_train.columns)
+        top_variables = variable_weights.iloc[0].abs().sort_values(ascending=False)[:10]  # Limitez ici le nombre de variables à afficher
+        top_variable_weights = variable_weights[top_variables.index]
+        fig, ax = plt.subplots()
+        ax.bar(top_variable_weights.columns, top_variable_weights.iloc[0].abs().sort_values(ascending=False)[:10])  # Afficher les poids de la première composante principale pour les variables les plus importantes
+        ax.set_xlabel("Variables")
+        ax.set_ylabel("Poids")
+        ax.set_title("Poids des variables les plus importantes dans la première composante principale")
+        plt.xticks(rotation=90)
+        st.pyplot(fig)
     
     #Selectbox avec Choix du modèle
     model_choisi = st.selectbox(label = "Choix du modèle", 
@@ -210,15 +263,18 @@ elif page == pages[2]:
     # Bouton "Réinitialiser" dans la deuxième colonne
     reset_button = col2.button("Réinitialiser")
     
+    container = ModelContainer()
+    
     if reset_button:
         search_param = False
         reset_button = False
         
     if search_param:
        
-        best_model, best_params, model, score = select_best_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test)
+        best_model, best_params, model, score_train, score = select_best_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test)
         st.write("Les meilleurs hyperparamètres sont :", best_params)
-        st.write("Score après optimisation des hyperparamètres : ", score)
+        st.write("Score données train après optimisation des hyperparamètres : ", score_train)
+        st.write("Score données test après optimisation des hyperparamètres : ", score)
         st.write("La meilleure combinaison pour ce modèle est :")
         st.write(best_model)
         
@@ -230,36 +286,24 @@ elif page == pages[2]:
         st.write(classification_report(y_test, y_pred))
             
         st.session_state.search_param = search_param
+               
+        container.store_model(best_model)
         
-    #Pour plus de facilité on va directement stocker les bonnes variables entrainées pour la suite
-    best_params = {
-        "C":0.01,
-        "max_iter":100,
-        "penalty":"l2",
-        "solver":"liblinear"
-        }
-    model_app = LogisticRegression()
-    model_app.set_params(**best_params)
-    model_app.fit(X_train_reduced, y_train)
-    
-    st.session_state.trained_model = model_app
+    else:    
+        container.store_model(model)
 
-elif page == pages[3]:
+    st.session_state.container = container
+    
+elif page == pages[4]:
     
     st.subheader(':gear: Modélisation : Méthode non supervisée')
     
     #Récupération var df_new dans la session
     df_new = st.session_state.df_new
-    
-    #On refait un nettoyage mais plus avancé pour accélérer le chargement
-    df_new = nettoyage(df, remove = True)   
-    #Appel fonction processing et séparation des données
-    X_test, X_train, y_test, y_train, target_df = processing(df_new)
-    
-    #Checkpoint
-    st.write("Pour la modélisation non supervisée nous avons choisi de réduire encore plus les données pour un chargement plus rapide.")
-    st.write("Format de X_test après processing: ", X_test.shape)
-    st.write("Format de X_train après processing: ", X_train.shape)
+    X_test = st.session_state.X_test
+    X_train = st.session_state.X_train
+    y_test = st.session_state.y_test
+    y_train = st.session_state.y_train
     
     #Pour la modélisation non supervisée non choisissons après différents tests d'opter d'office pour PCA pour des 
     #raisons de performances du code
@@ -309,25 +353,48 @@ elif page == pages[3]:
         
         st.write("Score Silhouette :", silhouette_avg)
         
-elif page == pages[4]:
+elif page == pages[5]:
     
-    #Stockage des variables pour récupération
-    y_train = st.session_state.y_train
-    X_train = st.session_state.X_train
-    df_new = st.session_state.df_new_app
+    df = pd.read_csv('kaggle_survey_2020_responses.csv')  
+    df_new = big_cleaning(df)
+    
+    df_new = resample_df(df_new)
+    
+    #Appel fonction processing et séparation des données
+    X_test, X_train, y_test, y_train, target_df = processing(df_new)    
+    X_train_reduced, X_test_reduced, reduction = reduction("PCA", X_train, y_train, X_test)
+    
+    X_train_reduced.shape
+    y_train.shape
+    
+    best_params = {
+        "C":0.1,
+        "max_iter":100,
+        "penalty":"l2",
+        "solver":"liblinear"
+        }   
+   
+    model_app = LogisticRegression()
+    model_app.set_params(**best_params)
+    model_app.fit(X_train_reduced, y_train)
+    
+    # Calculer le score sur les données d'entraînement
+    train_score = model_app.score(X_train_reduced, y_train)
+    st.write("Score sur les données d'entraînement :", train_score)
 
+    # Calculer le score sur les données de test
+    test_score = model_app.score(X_test_reduced, y_test)
+    st.write("Score sur les données de test :", test_score)
 
     st.subheader(":pencil: Application du modèle")
     
     #Formulaire contenant les questions pour les recruteurs
-    q1_values = df_new["Q1"].unique()
-    age = st.selectbox("Âge du candidat", q1_values, key = "Q1") 
     q3_values = df_new["Q3"].unique()
-    country = st.selectbox("Pays d'origine", q3_values, key = "Q3") 
+    country = st.selectbox("Pays d'origine", sorted(q3_values), key = "Q3") 
     q4_values = df_new["Q4"].unique()
     education_level = st.selectbox("Niveau d'études", q4_values, key = "Q4") 
     
-    st.write("Languages de programmation maitrisés:")   
+    st.subheader("Languages de programmation maitrisés:")   
     selected_q7_1 = st.checkbox("Python", key="Q7_Part_1")
     programming_language_1 = 1 if selected_q7_1 else 0
     selected_q7_2 = st.checkbox("R", key="Q7_Part_2")
@@ -345,7 +412,7 @@ elif page == pages[4]:
     q6_values = df_new["Q6"].unique()
     experience = st.selectbox("Expérience", q6_values, key = "Q6")
       
-    st.write("IDE le plus souvent utilisé:")  
+    st.subheader("IDE le plus souvent utilisé:")  
     selected_q9_1 = st.checkbox("Jupyter (JupyterLab, Jupyter Notebooks, etc) ", key="Q9_Part_1")
     ide_1 = 1 if selected_q9_1 else 0
     selected_q9_2 = st.checkbox("RStudio", key="Q9_Part_2")
@@ -360,41 +427,96 @@ elif page == pages[4]:
     ide_6 = 1 if selected_q9_6 else 0 
     selected_q9_7 = st.checkbox( "Notepad++", key="Q9_Part_7")
     ide_7 = 1 if selected_q9_7 else 0     
+    
+    st.subheader("ML framework plus souvent utilisé:")  
+    selected_q16_1 = st.checkbox("Scikit-learn", key="Q16_Part_1")
+    ml_1 = 1 if selected_q16_1 else 0
+    selected_q16_2 = st.checkbox("TensorFlow", key="Q16_Part_2")
+    ml_2 = 1 if selected_q16_2 else 0
+    selected_q16_3 = st.checkbox("Keras", key="Q16_Part_3")
+    ml_3 = 1 if selected_q16_3 else 0
+    selected_q16_4 = st.checkbox("PyTorch", key="Q16_Part_4")
+    ml_4 = 1 if selected_q16_4 else 0  
+    selected_q16_5 = st.checkbox( "Fast.ai", key="Q16_Part_5")
+    ml_5 = 1 if selected_q16_5 else 0   
+    selected_q16_6 = st.checkbox( "MXNet", key="Q16_Part_6")
+    ml_6 = 1 if selected_q16_6 else 0 
+    selected_q16_7 = st.checkbox( "Xgboost", key="Q16_Part_7")
+    ml_7 = 1 if selected_q16_7 else 0     
+    
+    st.subheader("Tâches principales:")  
+    selected_q23_1 = st.checkbox("Analyze and understand data to influence product or business decisions", key="Q23_Part_1")
+    tk_1 = 1 if selected_q23_1 else 0
+    selected_q23_2 = st.checkbox("Build and/or run the data infrastructure that my business uses for storing, analyzing, and operationalizing data", key="Q23_Part_2")
+    tk_2 = 1 if selected_q23_2 else 0
+    selected_q23_3 = st.checkbox("Build prototypes to explore applying machine learning to new areas", key="Q23_Part_3")
+    tk_3 = 1 if selected_q23_3 else 0
+    selected_q23_4 = st.checkbox("Build and/or run a machine learning service that operationally improves my product or workflows", key="Q23_Part_4")
+    tk_4 = 1 if selected_q23_4 else 0  
+    selected_q23_5 = st.checkbox( "Experimentation and iteration to improve existing ML models", key="Q23_Part_5")
+    tk_5 = 1 if selected_q23_5 else 0   
+    selected_q23_6 = st.checkbox( "Do research that advances the state of the art of machine learning", key="Q23_Part_6")
+    tk_6 = 1 if selected_q23_6 else 0 
+    selected_q23_7 = st.checkbox( "None of these activities are an important part of my role at work", key="Q23_Part_7")
+    tk_7 = 1 if selected_q23_7 else 0     
+    selected_q23_other = st.checkbox( "Other", key="Q23_OTHER")
+    tk_8 = 1 if selected_q23_other else 0     
+    
+    
+    st.subheader("Outil de Business Intelligence utilisé:")  
+    q32_values = df_new["Q32"].unique()
+    bi = st.selectbox("BI", sorted(q32_values), key = "Q32") 
+    
+    st.subheader("Salaire proposé") 
     q24_values = df_new["Q24"].unique()
-    salary = st.selectbox("Salary", q24_values, key = "Q24")
+    salary = st.selectbox("Salary", sorted(q24_values), key = "Q24")
+    
+    
       
     # Bouton "Identifier le poste recherché"
     if st.button("Identifier le poste recherché"):
-        features = pd.DataFrame(data=[[age, country, education_level, programming_language_1, programming_language_2, programming_language_3, 
+        features = pd.DataFrame(data=[[country, education_level, programming_language_1, programming_language_2, programming_language_3, 
                                          programming_language_4, programming_language_5, programming_language_6, programming_language_7, experience,
-                                         ide_1, ide_2, ide_3, ide_4, ide_5, ide_6, ide_7, salary]], 
-                                  columns=['age', 'country', 'education_level', 
+                                         ide_1, ide_2, ide_3, ide_4, ide_5, ide_6, ide_7, bi, salary, ml_1, ml_2, ml_3, ml_4,
+                                         ml_5, ml_6, ml_7, tk_1, tk_2, tk_3, tk_4, tk_5, tk_6, tk_7, tk_8]], 
+                                  columns=['country', 'education_level', 
                                            'programming_language_1', 'programming_language_2' ,'programming_language_3', 'programming_language_4', 'programming_language_5', 'programming_language_6', 'programming_language_7',
-                                           'experience', 'ide_1', 'ide_2', 'ide_3', 'ide_4', 'ide_5', 'ide_6', 'ide_7', 'salary'])
+                                           'experience', 'ide_1', 'ide_2', 'ide_3', 'ide_4', 'ide_5', 'ide_6', 'ide_7', 'BI','salary',
+                                           'ml_1', 'ml_2', 'ml_3', 'ml_4', 'ml_5', 'ml_6', 'ml_7', 'tk_1', 'tk_2', 'tk_3', 'tk_4', 'tk_5', 'tk_6', 'tk_7', 'tk_8'])
       
    
-
-    # Encoder les données catégorielles avec pd.get_dummies()
+        st.write(features.head())
+        # Encoder les données catégorielles avec pd.get_dummies()
         features_encoded = pd.get_dummies(features)
-    
+        
+        
         #Comme on a pas pu poser toutes les question du df de base, nous préférons remplacer les colonnes manquantes par 0
         missing_cols = set(X_train.columns) - set(features_encoded.columns)
         for col in missing_cols:
             features_encoded[col] = 0
         features_encoded = features_encoded[X_train.columns]
-  
-        # Charger le modèle pré-entraîné
-        model = st.session_state.trained_model
-
-        prediction = model.predict(features_encoded)
+        st.write(features_encoded.shape)
+        
+        pca = PCA()
+        #features_reduced = pca.fit_transform(features_encoded)
+        prediction = model_app.predict(features_encoded)
       
+        st.write(prediction)
         
       #On récupère la variable target sous forme d'un df pour extraire le label correspondant
         target_df = st.session_state.target_df
+        
+        st.write(target_df)
 
         # Afficher la prédiction
-        st.write("Le poste prédit est :", target_df.loc[prediction[0], 'Label original'])
+        #st.write("Le poste prédit est :", target_df.loc[prediction[0], 'Label original'])
+        
+        predicted_encoding = prediction[0]  # Résultat de la prédiction
+        matching_row = target_df[target_df['Encodage'] == predicted_encoding]
+        predicted_label = matching_row['Label original'].values[0]  # Valeur de la colonne 'Label original'
+        st.write("Le poste prédit est :", predicted_label)  
     
 
-
+        st.subheader(":pencil: Conclusion")
+        st.write("En quelques mots : Beaucoup d'autres tests à faire, enrichir les données avec plus de data")
    
