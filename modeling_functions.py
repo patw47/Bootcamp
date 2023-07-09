@@ -180,8 +180,8 @@ def select_best_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_
         param_grid = {
             'penalty': ['l1', 'l2'],
             'C': [0.01, 0.1, 1, 10, 100],
-            'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag'],
-            'max_iter': [100]
+            'solver': ['liblinear', 'lbfgs', 'newton-cg', 'sag']#,
+            #'max_iter': [100, 200, 300, 400, 500]
         }
     elif model_choisi == 'KNN':
         model = KNeighborsClassifier()
