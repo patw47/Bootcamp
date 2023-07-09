@@ -287,7 +287,7 @@ def display_clusters(methode_choisie, X_train_reduced):
     '''    
 
     if methode_choisie == "K-means":
-        model = KMeans(n_clusters=4)
+        model = KMeans(n_clusters=2)
         labels = model.fit_predict(X_train_reduced)
     elif methode_choisie == "Clustering Hiérarchique":
         model = AgglomerativeClustering(n_clusters=4)

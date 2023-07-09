@@ -81,7 +81,7 @@ def big_cleaning(df):
    # cols_to_drop = ['Q1','Q2','Q20', 'Q21', 'Q22', 'Q25', "Q12_Part_1", "Q12_Part_2", "Q12_Part_3", "Q12_OTHER", "Q9_Part_11"]
    # df_new = df_new.drop(cols_to_drop, axis=1)
   
-    columns_to_keep = ['Q3', 'Q4', 'Q5', 'Q6', 'Q24','Q25', 'Q32','Q7_Part_1', 'Q7_Part_2', 'Q7_Part_3', 'Q7_Part_4', 'Q7_Part_5', 'Q7_Part_6',
+    columns_to_keep = ['Q3', 'Q4', 'Q5', 'Q6', 'Q24', 'Q32','Q7_Part_1', 'Q7_Part_2', 'Q7_Part_3', 'Q7_Part_4', 'Q7_Part_5', 'Q7_Part_6',
                    'Q7_Part_7', 'Q9_Part_1', 'Q9_Part_2', 'Q9_Part_3', 'Q9_Part_4', 'Q9_Part_5', 'Q9_Part_6', 'Q9_Part_7',
                    'Q16_Part_1', 'Q16_Part_2', 'Q16_Part_3', 'Q16_Part_4', 'Q16_Part_5', 'Q16_Part_6', 'Q16_Part_7',
                    'Q23_Part_1', 'Q23_Part_2', 'Q23_Part_3', 'Q23_Part_4', 'Q23_Part_5', 'Q23_Part_6', 'Q23_Part_7', 'Q23_OTHER']
@@ -113,13 +113,10 @@ def big_cleaning(df):
             df_new[column] = np.where(df_new[column].fillna('') != '', 1, 0)
      
     #Remplacement des dernières valeurs vides catégorielles par None
-  #  df_new['Q11'].fillna("A personal computer or laptop", inplace=True)
-  #  df_new['Q13'].fillna("Never", inplace=True)
-  #  df_new['Q15'].fillna("I do not use machine learning methods", inplace=True)
     df_new['Q32'].fillna("None", inplace=True)
   #  df_new['Q30'].fillna("None", inplace=True)
   #  df_new['Q38'].fillna("None", inplace=True)
-    df_new['Q25'].fillna("$0 ($USD)", inplace=True)
+  #  df_new['Q25'].fillna("$0 ($USD)", inplace=True)
     
     #On retire les salaires aberrants
     df_new = remove_outliers_by_category(df_new)
@@ -129,8 +126,6 @@ def big_cleaning(df):
     
     #Salaires, on remplace les vides par le mode
     df_new['Q24'].fillna(df_new['Q24'].mode().iloc[0], inplace=True)
-    
-    #df_new = resample_df(df_new)
 
     #Stockage df_new dans la var de session
     st.session_state.df_new = df_new
@@ -224,7 +219,9 @@ def title_filtering(column):
     replacement_dict = {
         "DBA/Database Engineer": "Data Engineer",
         "Business Analyst" : "Data Analyst",
-        "Statistician" : "Data Analyst"
+        "Statistician" : "Data Analyst",
+        "Software Engineer": "Data Engineer",
+        "Research Scientist" : "Machine Learning Engineer"
    
         }
     column = column.replace(replacement_dict)
