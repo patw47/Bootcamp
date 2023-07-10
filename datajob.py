@@ -43,7 +43,10 @@ with col1:
 # Bouton pour le lien GitHub
 with col2:
     if st.button("GitHub", key="github"):
-        webbrowser.open("https://github.com/patw47/Bootcamp")
+        #webbrowser.open("https://github.com/patw47/Bootcamp")
+        url = "https://github.com/patw47/Bootcamp"
+        new_tab = f'<a target="_blank" href="{url}">GitHub</a>'
+        st.markdown(new_tab, unsafe_allow_html=True)
         
 
 st.sidebar.title("Sommaire")
