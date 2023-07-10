@@ -10,7 +10,6 @@ import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 import streamlit as st
-from bokeh.models.widgets import Div
 from sklearn.metrics import classification_report
 from sklearn.decomposition import PCA
 from main_functions import processing, big_cleaning
@@ -36,22 +35,14 @@ pages = ['Introduction',
 
 col1, col2 = st.columns(2)
 
-with col1:
-    if st.button("Lien vers le rapport", key="rapport"):
-        js = "window.open('https://docs.google.com/document/d/1DLS5DsbR-z5cnq5FYZIlrufrJUUiUxgFgHqk9vBGz2c/edit?usp=sharing')"  # New tab or window
-        js = "window.location.href = 'https://docs.google.com/document/d/1DLS5DsbR-z5cnq5FYZIlrufrJUUiUxgFgHqk9vBGz2c/edit?usp=sharing'"  # Current tab
-        html = '<img src onerror="{}">'.format(js)
-        div = Div(text=html)
-        st.bokeh_chart(div)
+with col1:   
+    link = '[Lien vers le rapport](https://docs.google.com/document/d/1DLS5DsbR-z5cnq5FYZIlrufrJUUiUxgFgHqk9vBGz2c/edit?usp=sharing)'
+    st.markdown(link, unsafe_allow_html=True)
 
 # Bouton pour le lien GitHub
 with col2:
-    if st.button("GitHub", key="github"):
-        js = "window.open('https://github.com/patw47/Bootcamp')"  # New tab or window
-        js = "window.location.href = 'https://github.com/patw47/Bootcamp'"  # Current tab
-        html = '<img src onerror="{}">'.format(js)
-        div = Div(text=html)
-        st.bokeh_chart(div)
+    link = '[GitHub](https://github.com/patw47/Bootcamp)'
+    st.markdown(link, unsafe_allow_html=True)
 
 st.sidebar.title("Sommaire")
 st.sidebar.image('datajob.jpg')
