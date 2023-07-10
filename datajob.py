@@ -53,9 +53,10 @@ page = st.sidebar.radio('Aller vers', pages)
 if page == pages[0]:
     
     st.image('Diapositive1.JPG')   
+    st.image('Diapositive4.JPG')
     st.image('Diapositive2.JPG')
     st.image('Diapositive3.JPG')
-    st.image('Diapositive4.JPG')
+    
     
     
 if page == pages[1]:
