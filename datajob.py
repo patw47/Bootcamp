@@ -15,7 +15,7 @@ from sklearn.metrics import classification_report
 from sklearn.decomposition import PCA
 from main_functions import processing, big_cleaning
 from sklearn.linear_model import LogisticRegression
-from modeling_functions import ModelContainer, reduction, train_supervised_model, select_best_model, train_non_supervised_model, search_clusters, display_clusters
+from modeling_functions import reduction, train_supervised_model, select_best_model, train_non_supervised_model, search_clusters, display_clusters
 import warnings
 # Ignorer les avertissements
 warnings.filterwarnings("ignore")
@@ -171,11 +171,10 @@ elif page == pages[2]:
 
 elif page == pages[3]:
      
-    st.subheader(":chains: Encodage des données en 5 étapes : ")
+    st.subheader(":chains: Encodage des données en 4 étapes : ")
     st.write(":white_check_mark: Séparation variable cible et encodage avec LabelEncoder")
     st.write(":white_check_mark: Séparation jeu de test et jeu d'entrainement")
     st.write(":white_check_mark: Encodage des variables catégorielles avec Getdummies")
-    st.write(":white_check_mark: Resampling de la variable cible")
     st.write(":white_check_mark: Réduction au choix avec PCA ou LDA")
     
     df_new = big_cleaning(df)
@@ -251,44 +250,42 @@ elif page == pages[3]:
     score, model = train_supervised_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test)
     #Affichage du score
     st.write("Score :", score)
+    
+    #Pour des raisons de performances nous avons décidé dans un premier temps de laisser
+    #le résultat des hyperparamètres sous forme d'images    
+    if model_choisi == "Régression logistique":
+        st.markdown("**Recherche des meilleurs hyperparamètres :**")
+        st.image('hyperparametres.png')
+    
 
-    st.markdown("**Recherche des meilleurs hyperparamètres :**")
-    col1, col2 = st.columns(2)
+    #col1, col2 = st.columns(2)
     # Bouton "Lancer l'optimisation" dans la première colonne
-    search_param = col1.button("Lancer l'optimisation")
+    #search_param = col1.button("Lancer l'optimisation")
     # Bouton "Réinitialiser" dans la deuxième colonne
-    reset_button = col2.button("Réinitialiser")
-    
-    container = ModelContainer()
-    
-    if reset_button:
-        search_param = False
-        reset_button = False
+    #reset_button = col2.button("Réinitialiser")
+
+   # if reset_button:
+    #    search_param = False
+    #    reset_button = False
         
-    if search_param:
+   # if search_param:
        
-        best_model, best_params, model, score_train, score = select_best_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test)
-        st.write("Les meilleurs hyperparamètres sont :", best_params)
-        st.write("Score données train après optimisation des hyperparamètres : ", score_train)
-        st.write("Score données test après optimisation des hyperparamètres : ", score)
-        st.write("La meilleure combinaison pour ce modèle est :")
-        st.write(best_model)
+     #   best_model, best_params, model, score_train, score = select_best_model(model_choisi, X_train_reduced, y_train, X_test_reduced, y_test)
+     #   st.write("Les meilleurs hyperparamètres sont :", best_params)
+     #   st.write("Score données train après optimisation des hyperparamètres : ", score_train)
+     #   st.write("Score données test après optimisation des hyperparamètres : ", score)
+      #  st.write("La meilleure combinaison pour ce modèle est :")
+      #  st.write(best_model)
         
-        st.write("Comparaison prédictions vs réalité :") 
-        y_pred = best_model.predict(X_test_reduced) 
-        st.write(pd.crosstab(y_test, y_pred, rownames=['Réel'], colnames=['Prédiction']))
+      #  st.write("Comparaison prédictions vs réalité :") 
+     #   y_pred = best_model.predict(X_test_reduced) 
+     #   st.write(pd.crosstab(y_test, y_pred, rownames=['Réel'], colnames=['Prédiction']))
 
-        st.write("Rapport de classification :")
-        st.write(classification_report(y_test, y_pred))
+     #   st.write("Rapport de classification :")
+      #  st.write(classification_report(y_test, y_pred))
             
-        st.session_state.search_param = search_param
-               
-        container.store_model(best_model)
-        
-    else:    
-        container.store_model(model)
+      #  st.session_state.search_param = search_param
 
-    st.session_state.container = container
     
 elif page == pages[4]:
     
@@ -352,15 +349,16 @@ elif page == pages[4]:
 elif page == pages[5]:
     
     df = pd.read_csv('kaggle_survey_2020_responses.csv')  
+    
     df_new = big_cleaning(df)
 
     #Appel fonction processing et séparation des données
     X_test, X_train, y_test, y_train, target_df = processing(df_new)    
-   # X_train_reduced, X_test_reduced, reduction = reduction("PCA", X_train, y_train, X_test)
-    X_train_reduced = X_train
-    X_test_reduced = X_test
+    #X_train_reduced, X_test_reduced, reduction = reduction("PCA", X_train, y_train, X_test)
+   # X_train_reduced = X_train
+  #  X_test_reduced = X_test
     
-    st.write(X_train_reduced)
+   # st.write(X_train_reduced)
     
     best_params = {
         "C":0.1,
@@ -371,16 +369,28 @@ elif page == pages[5]:
    
     model_app = LogisticRegression()
     model_app.set_params(**best_params)
-    model_app.fit(X_train_reduced, y_train)
+    model_app.fit(X_train, y_train)
     
     # Calculer le score sur les données d'entraînement
-    train_score = model_app.score(X_train_reduced, y_train)
+    train_score = model_app.score(X_train, y_train)
     st.write("Score sur les données d'entraînement :", train_score)
 
     # Calculer le score sur les données de test
-    test_score = model_app.score(X_test_reduced, y_test)
+    test_score = model_app.score(X_test, y_test)
     st.write("Score sur les données de test :", test_score)
-
+    
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.write("Comparaison prédictions vs réalité :") 
+        y_pred = model_app.predict(X_test) 
+        st.write(pd.crosstab(y_test, y_pred, rownames=['Réel'], colnames=['Prédiction']))
+    
+    with col2:
+        st.write("Variables cibles :") 
+        st.write(target_df.drop_duplicates())
+    
+    
     st.subheader(":pencil: Application du modèle")
     
     #Formulaire contenant les questions pour les recruteurs
@@ -460,11 +470,15 @@ elif page == pages[5]:
     
     st.subheader("Outil de Business Intelligence utilisé:")  
     q32_values = df_new["Q32"].unique()
-    bi = st.selectbox("BI", sorted(q32_values), key = "Q32") 
+    bi = st.selectbox("", sorted(q32_values), key = "Q32") 
     
-    st.subheader("Salaire proposé") 
+    st.subheader("Salaire proposé en $") 
+    tri_salaires = ["20'000 - 30'000 par an", "30'000 - 60'000 par an", "60'000 - 90'000 par an", 
+                    "90'000 - 125'000 par an", "125'000 - 200'000 par an", "plus de 200'000 par an"] 
     q24_values = df_new["Q24"].unique()
-    salary = st.selectbox("Salary", sorted(q24_values), key = "Q24")
+    q24_values_sorted = sorted(q24_values, key=lambda x: tri_salaires.index(x) if x in tri_salaires else len(tri_salaires))
+
+    salary = st.selectbox("", q24_values_sorted, key = "Q24")
     
     
       
@@ -558,8 +572,18 @@ elif page == pages[5]:
             features_encoded[col] = 0
         features_encoded = features_encoded[X_train.columns]
         
-        st.write(features_encoded)
+       # X_train.shape
+      #  features_encoded.shape
         
+      #  X_train.columns
+      #  features_encoded.columns
+        
+      #  first_row = X_train.iloc[0] 
+     #   st.write(pd.DataFrame(first_row).transpose())
+        
+        
+      #  form_row = features_encoded.iloc[0] 
+     #   st.write(pd.DataFrame(form_row).transpose())
         
         #pca = PCA()
         #features_reduced = pca.fit_transform(features_encoded)

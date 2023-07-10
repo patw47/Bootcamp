@@ -6,8 +6,6 @@ Created on Fri Jun 23 17:44:35 2023
 """
 import numpy as np
 import streamlit as st
-import pickle
-import os
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
@@ -17,8 +15,6 @@ from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.metrics import silhouette_score
 from sklearn.model_selection import GridSearchCV
-#import matplotlib.pyplot as plt
-#from scipy.cluster.hierarchy import dendrogram
 from scipy.spatial.distance import cdist
 import warnings
 
@@ -290,34 +286,10 @@ def display_clusters(methode_choisie, X_train_reduced):
         model = KMeans(n_clusters=2)
         labels = model.fit_predict(X_train_reduced)
     elif methode_choisie == "Clustering Hiérarchique":
-        model = AgglomerativeClustering(n_clusters=4)
+        model = AgglomerativeClustering(n_clusters=3)
         labels = model.fit_predict(X_train_reduced)
     
     silhouette_avg = silhouette_score(X_train_reduced, labels)
     
     return X_train_reduced, silhouette_avg, labels
 
-class ModelContainer:
-    def __init__(self):
-        self.model = None
-
-    def store_model(self, model):
-        """
-        Stocke le modèle entraîné.
-
-        Args:
-            model (object): Modèle entraîné à stocker.
-
-        Returns:
-            None
-        """
-        self.model = model
-
-    def load_model(self):
-        """
-        Charge le modèle stocké.
-
-        Returns:
-            object: Modèle chargé.
-        """
-        return self.model
