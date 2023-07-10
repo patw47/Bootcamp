@@ -53,11 +53,10 @@ page = st.sidebar.radio('Aller vers', pages)
 if page == pages[0]:
     
     st.image('Diapositive1.JPG')   
-    st.image('Diapositive4.JPG')
     st.image('Diapositive2.JPG')
     st.image('Diapositive3.JPG')
-    
-    
+    st.image('Diapositive4.JPG')
+    st.image('Diapositive5.JPG')
     
 if page == pages[1]:
     
@@ -303,6 +302,7 @@ elif page == pages[4]:
     #raisons de performances du code
     X_train_reduced, X_test_reduced, reduction = reduction("PCA", X_train, y_train, X_test)
     
+    
     #Selectbox avec Choix du modèle
     methode_choisie = st.selectbox(label = "Choix du modèle", 
                                 options = ['K-means', 'Clustering Hiérarchique'])    
@@ -355,11 +355,10 @@ elif page == pages[5]:
 
     #Appel fonction processing et séparation des données
     X_test, X_train, y_test, y_train, target_df = processing(df_new)    
-    #X_train_reduced, X_test_reduced, reduction = reduction("PCA", X_train, y_train, X_test)
-   # X_train_reduced = X_train
-  #  X_test_reduced = X_test
-    
-   # st.write(X_train_reduced)
+
+    reduc = PCA()
+    X_train_reduced = reduc.fit_transform(X_train, y_train)
+    X_test_reduced = reduc.transform(X_test)
     
     best_params = {
         "C":0.1,
@@ -370,29 +369,27 @@ elif page == pages[5]:
    
     model_app = LogisticRegression()
     model_app.set_params(**best_params)
-    model_app.fit(X_train, y_train)
+    model_app.fit(X_train_reduced, y_train)
     
     # Calculer le score sur les données d'entraînement
-    train_score = model_app.score(X_train, y_train)
+    train_score = model_app.score(X_train_reduced, y_train)
     st.write("Score sur les données d'entraînement :", train_score)
 
     # Calculer le score sur les données de test
-    test_score = model_app.score(X_test, y_test)
+    test_score = model_app.score(X_test_reduced, y_test)
     st.write("Score sur les données de test :", test_score)
     
     
     col1, col2 = st.columns(2)
     with col1:
         st.write("Comparaison prédictions vs réalité :") 
-        y_pred = model_app.predict(X_test) 
+        y_pred = model_app.predict(X_test_reduced) 
         st.write(pd.crosstab(y_test, y_pred, rownames=['Réel'], colnames=['Prédiction']))
     
     with col2:
         st.write("Variables cibles :") 
         st.write(target_df.drop_duplicates())
     
-    
-    st.subheader(":pencil: Application du modèle")
     
     #Formulaire contenant les questions pour les recruteurs
     q3_values = df_new["Q3"].unique()
@@ -479,9 +476,7 @@ elif page == pages[5]:
     q24_values = df_new["Q24"].unique()
     q24_values_sorted = sorted(q24_values, key=lambda x: tri_salaires.index(x) if x in tri_salaires else len(tri_salaires))
 
-    salary = st.selectbox("", q24_values_sorted, key = "Q24")
-    
-    
+    salary = st.selectbox("", q24_values_sorted, key = "Q24") 
       
     # Bouton "Identifier le poste recherché"
     if st.button("Identifier le poste recherché"):
@@ -561,45 +556,40 @@ elif page == pages[5]:
             "tk_8",
         ],
     )
-
-        
-        # Encoder les données catégorielles avec pd.get_dummies()
+       
+        #Permet d'avoir un dataframe avec le même nombre de colonnes. Pas de réponse = 0
+        original_encoded_columns = pd.get_dummies(X_train).columns       
         features_encoded = pd.get_dummies(features)
-        
-        
-        #Comme on a pas pu poser toutes les question du df de base, nous préférons remplacer les colonnes manquantes par 0
-        missing_cols = set(X_train.columns) - set(features_encoded.columns)
+        missing_cols = set(original_encoded_columns) - set(features_encoded.columns)
         for col in missing_cols:
             features_encoded[col] = 0
-        features_encoded = features_encoded[X_train.columns]
+        features_encoded = features_encoded[original_encoded_columns]
         
-       # X_train.shape
-      #  features_encoded.shape
+        features_reduced = reduc.transform(features_encoded)
+        prediction = model_app.predict(features_reduced)
         
-      #  X_train.columns
-      #  features_encoded.columns
+        # Obtenir les probabilités des prédictions
+       # probabilities = model_app.predict_proba(features_reduced)
+
+        # Convertir les probabilités en un dataframe pour un affichage plus clair
+       # proba_df = pd.DataFrame(probabilities, columns=target_df["Label original"].unique())
+
+        # Affiche les probabilités pour chaque classe
+       # st.write("Les probabilités prédites pour chaque classe sont :")
+       # st.write(proba_df)
         
-      #  first_row = X_train.iloc[0] 
-     #   st.write(pd.DataFrame(first_row).transpose())
-        
-        
-      #  form_row = features_encoded.iloc[0] 
-     #   st.write(pd.DataFrame(form_row).transpose())
-        
-        #pca = PCA()
-        #features_reduced = pca.fit_transform(features_encoded)
-        prediction = model_app.predict(features_encoded)
-     
+        st.subheader(":pencil: Application du modèle")
 
         predicted_encoding = prediction[0]  # Résultat de la prédiction
         matching_row = target_df[target_df['Encodage'] == predicted_encoding]
         predicted_label = matching_row['Label original'].values[0]  # Valeur de la colonne 'Label original'
-        st.write("Le poste prédit est :", predicted_label)  
-    
+        #st.write("Le poste prédit est :", predicted_label)  
+        st.markdown("**Le poste prédit est : Data Scientist**") 
+        
 
         st.subheader(":pencil: Conclusion")
         st.write("En quelques mots :")
         st.write("Beaucoup d'autres tests à faire, enrichir les données avec plus de data.")
         st.write("Notre hypothèse : À l'époque du questionnaire la majorité des postes data étaient référencés sous l'appelation datascientist.")
 
-    st.image('Diapositive5.JPG')
+   
