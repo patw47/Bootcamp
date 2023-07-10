@@ -56,7 +56,7 @@ if page == pages[0]:
     st.image('Diapositive2.JPG')
     st.image('Diapositive3.JPG')
     st.image('Diapositive4.JPG')
-    st.image('Diapositive5.JPG')
+    
     
 if page == pages[1]:
     
@@ -601,4 +601,4 @@ elif page == pages[5]:
         st.write("Beaucoup d'autres tests à faire, enrichir les données avec plus de data.")
         st.write("Notre hypothèse : À l'époque du questionnaire la majorité des postes data étaient référencés sous l'appelation datascientist.")
 
-   
+    st.image('Diapositive5.JPG')
