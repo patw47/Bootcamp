@@ -589,9 +589,6 @@ elif page == pages[5]:
         #features_reduced = pca.fit_transform(features_encoded)
         prediction = model_app.predict(features_encoded)
      
-        
-      #On récupère la variable target sous forme d'un df pour extraire le label correspondant
-        target_df = st.session_state.target_df
 
         predicted_encoding = prediction[0]  # Résultat de la prédiction
         matching_row = target_df[target_df['Encodage'] == predicted_encoding]
